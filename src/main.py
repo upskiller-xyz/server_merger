@@ -29,8 +29,8 @@ from src.server.services.df_aggregation import DFAggregationService
 class ServerConfig:
     """Server configuration constants"""
     DEFAULT_HOST = "0.0.0.0"
-    DEFAULT_PORT = 8080
-    DEFAULT_ENV_PORT = 8081
+    DEFAULT_PORT = 8084
+    DEFAULT_ENV_PORT = 8084
     DEFAULT_OUTPUT_SCALE = 0.1
 
 

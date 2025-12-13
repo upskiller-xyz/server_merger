@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r /requirements.txt
 RUN chmod 444 main.py
 RUN chmod 444 /requirements.txt
 
-ENV PORT 8080
+ENV PORT 8084
 
 CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 900 main:app
 
