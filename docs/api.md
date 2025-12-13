@@ -1,209 +1,199 @@
-# API Documentation
+# API Reference
 
-This document describes the main API endpoints for the Model Server.
-Example requests are provided in both **Python** (using `requests`) and **TypeScript** (using `fetch`). Use [the playground notebook](../playground.ipynb) for hands-on examples with the API.
-
----
-
-## `/`
-**GET** `/`
-Health check endpoint that returns the current server status and information.
-
-### Request
-- **Content-Type:** Not required (GET request)
-- **Body:** None
-
-### Response
-- **200 OK**
-  ```json
-  {
-    "name": "Upskiller Model Server",
-    "version": "2.0.0",
-    "status": "running"
-  }
-  ```
-
-### Python Example
-```python
-import requests
-
-response = requests.get("http://localhost:8000/")
-print(response.json())
-# Output: {"name": "Upskiller Model Server", "version": "2.0.0", "status": "running"}
-```
-
-### TypeScript Example
-```typescript
-fetch("http://localhost:8000/")
-  .then(res => res.json())
-  .then(data => console.log(data));
-```
-
----
-
-## `/run`
-**POST** `/run`
-Runs model inference on an uploaded image and returns prediction results.
-
-### Request
-- **Content-Type:** `multipart/form-data`
-- **Body:**
-  - `file`: The image file (PNG/JPG/JPEG/GIF) to process
-
-### Response
-- **200 OK** (Success)
-  ```json
-  {
-    "prediction": [[0.1, 0.2], [0.3, 0.4]],
-    "shape": [2, 2],
-    "status": "success"
-  }
-  ```
-- **400 Bad Request** (Invalid input)
-  ```json
-  {
-    "error": "No file uploaded"
-  }
-  ```
-  ```json
-  {
-    "error": "File must be an image"
-  }
-  ```
-- **500 Internal Server Error** (Processing error)
-  ```json
-  {
-    "error": "Prediction failed: <error message>"
-  }
-  ```
-
-### Response Fields
-- `field1`: description, format
-- `field2`: description, format
-- `status`: "success" for successful predictions
-
-### Python Example
-```python
-import requests
-
-# Single image prediction
-with open("input_image.jpg", "rb") as f:
-    files = {"file": f}
-    response = requests.post("http://localhost:8000/run", files=files)
-
-result = response.json()
-if result.get("status") == "success":
-    prediction = result["prediction"]
-    shape = result["shape"]
-    print(f"Prediction shape: {shape}")
-    print(f"Prediction values: {prediction[:2]}")  # First 2 rows
-else:
-    print(f"Error: {result.get('error')}")
-```
-
-### Python Example with OpenCV
-```python
-import cv2
-import requests
-import numpy as np
-from io import BytesIO
-
-# Load and preprocess image
-image = cv2.imread("input.jpg")
-image = cv2.resize(image, (640, 480))  # Resize to desired input size
-
-# Convert to bytes for upload
-_, buffer = cv2.imencode('.jpg', image)
-image_bytes = BytesIO(buffer)
-
-# Send prediction request
-files = {"file": ("image.jpg", image_bytes, "image/jpeg")}
-response = requests.post("http://localhost:8000/run", files=files)
-
-prediction = response.json()
+## Endpoint
 
 ```
-
-### TypeScript Example
-```typescript
-const formData = new FormData();
-const fileInput = document.getElementById('imageFile') as HTMLInputElement;
-if (fileInput.files?.[0]) {
-  formData.append('file', fileInput.files[0]);
-}
-
-fetch("http://localhost:8000/route1", {
-  method: "POST",
-  body: formData
-})
-  .then(res => res.json())
-  .then(data => {
-    if (data.status === 'success') {
-      console.log('Prediction shape:', data.shape);
-      console.log('Prediction data:', data.prediction);
-    } else {
-      console.error('Error:', data.error);
-    }
-  })
-  .catch(err => console.error('Request failed:', err));
+POST /merge
 ```
 
-### cURL Example
-```bash
-curl -X POST \
-  -F "file=@/path/to/your/image.jpg" \
-  http://localhost:8000/route1
+Aggregates daylight factor simulation results from multiple windows into a single room representation.
+
+## Request
+
+### Headers
+
+```
+Content-Type: application/json
 ```
 
+### Body Schema
 
----
-
-## Error Handling
-
-### Client Errors (4xx)
-- **400 Bad Request**: Missing file upload or invalid file format
-- **422 Unprocessable Entity**: File processing errors
-
-### Server Errors (5xx)
-- **500 Internal Server Error**: Model inference failures, memory issues, or server crashes
-
-### Error Response Format
 ```json
 {
-  "error": "Descriptive error message",
-  "status": "error"  // May be present
+  "room_polygon": [[x, y], ...],
+  "windows": {
+    "window_id": {
+      "x1": float,
+      "y1": float,
+      "z1": float,
+      "x2": float,
+      "y2": float,
+      "z2": float,
+      "direction_angle": float
+    }
+  },
+  "simulations": {
+    "window_id": {
+      "df_values": [[float, ...], ...],
+      "mask": [[int, ...], ...]
+    }
+  }
 }
 ```
 
----
+### Parameters
 
-## Usage Notes
+#### `room_polygon` (required)
+- **Type**: Array of [x, y] coordinate pairs
+- **Description**: Room floor plan polygon in meters
+- **Example**: `[[0, 0], [5, 0], [5, 4], [0, 4]]`
+- **Constraints**:
+  - Minimum 3 vertices
+  - Coordinates in meters
+  - Should form a closed polygon
 
-- **Server Port**: Default port is 8000 (configurable via `PORT` environment variable)
-- **File Upload**: Always use `multipart/form-data` for file uploads
-- **Content Types**: Server validates uploaded files are images
-- **Model Loading**: Model is loaded on first prediction request (may cause initial delay)
-- **Response Format**: All endpoints return JSON responses
-- **Logging**: Server provides structured logging for monitoring and debugging
+#### `windows` (required)
+- **Type**: Object mapping window IDs to window definitions
+- **Description**: Window geometry for each window
 
----
+**Window Definition:**
+- `x1, y1, z1` (float, required): First corner coordinates (meters)
+- `x2, y2, z2` (float, required): Opposite corner coordinates (meters)
+- `direction_angle` (float, required): Window direction in radians (0 = east, π/2 = north)
 
-## Development & Testing
-
-### Local Development
-```bash
-# Start the server
-python main.py
-
-# Test health check
-curl http://localhost:8000/
-
-# Test prediction with sample image
-curl -X POST -F "file=@sample.jpg" http://localhost:8000/run
+**Example:**
+```json
+{
+  "window_1": {
+    "x1": 0.0, "y1": 0.0, "z1": 1.0,
+    "x2": 1.5, "y2": 0.3, "z2": 2.5,
+    "direction_angle": 0.0
+  }
+}
 ```
 
-### Environment Variables
-- `MODEL`: Model checkpoint name (default: "df_default_2.0.0")
-- `PORT`: Server port (default: 8000)
+#### `simulations` (required)
+- **Type**: Object mapping window IDs to simulation data
+- **Description**: DF values and masks for each window
 
----
+**Simulation Data:**
+- `df_values` (2D array of floats, required): Daylight factor matrix (0-10+ range)
+- `mask` (2D array of ints, required): Binary mask (0 or 1)
+
+**Constraints:**
+- `df_values` and `mask` must have identical dimensions
+- Both must be square matrices (NxN)
+- Common sizes: 64×64, 128×128, 256×256
+
+**Example:**
+```json
+{
+  "window_1": {
+    "df_values": [[0.5, 0.6, ...], [0.4, 0.5, ...], ...],
+    "mask": [[1, 1, ...], [1, 1, ...], ...]
+  }
+}
+```
+
+## Response
+
+### Success (200 OK)
+
+```json
+{
+  "result": [[float, ...], ...],
+  "mask": [[int, ...], ...]
+}
+```
+
+#### Response Fields
+
+- `result` (2D array): Aggregated DF matrix for the room
+  - Dimensions: Room bounding box / 0.1 m/px
+  - Values: Summed DF contributions from all windows
+  - Type: float (0-10+ range)
+
+- `mask` (2D array): Room polygon mask
+  - Same dimensions as `result`
+  - Values: 1 inside room polygon, 0 outside
+  - Type: int (0 or 1)
+
+### Error Responses
+
+#### 400 Bad Request
+
+**Missing required field:**
+```json
+{
+  "error": "Missing required field: room_polygon"
+}
+```
+
+**Dimension mismatch:**
+```json
+{
+  "error": "Window window_1: df_values shape (128, 128) does not match mask shape (64, 64)"
+}
+```
+
+**Window not found:**
+```json
+{
+  "error": "Window window_2 not found in windows_data"
+}
+```
+
+#### 500 Internal Server Error
+
+**Processing failure:**
+```json
+{
+  "error": "Aggregation failed: <error message>"
+}
+```
+
+## Python Client Example
+
+```python
+import requests
+import numpy as np
+
+# Prepare data
+payload = {
+    "room_polygon": [[0, 0], [5, 0], [5, 4], [0, 4]],
+    "windows": {
+        "window_1": {
+            "x1": 1.0, "y1": 0.0, "z1": 1.0,
+            "x2": 2.5, "y2": 0.3, "z2": 2.5,
+            "direction_angle": 0.0
+        }
+    },
+    "simulations": {
+        "window_1": {
+            "df_values": np.random.rand(128, 128).tolist(),
+            "mask": np.ones((128, 128), dtype=int).tolist()
+        }
+    }
+}
+
+# Send request
+response = requests.post('http://localhost:8081/merge', json=payload)
+
+# Parse response
+if response.status_code == 200:
+    data = response.json()
+    df_matrix = np.array(data['result'])
+    room_mask = np.array(data['mask'])
+    print(f"Result shape: {df_matrix.shape}")
+    print(f"DF range: [{df_matrix.min():.2f}, {df_matrix.max():.2f}]")
+else:
+    print(f"Error {response.status_code}: {response.json()}")
+```
+
+## Notes
+
+- All coordinates are in meters
+- Direction angles are in radians
+- DF values are unitless (typically 0-10 range, but can exceed 10)
+- The service automatically handles rotation, scaling, and alignment
+- Window IDs in `windows` and `simulations` must match exactly
