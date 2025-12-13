@@ -91,7 +91,6 @@ class RoomPolygon:
     
     def point_to_zero(self, point:Point2D)->Point2D:
         min_x, min_y, _, _ = self.get_bounds()
-        print("minimal room points", min_x, min_y)
         return Point2D(point.x-min_x, point.y-min_y)
     
     def get_edges(self):
@@ -194,13 +193,13 @@ class RoomPolygon:
         
         res = [w_edge for w_edge in w_edges if rotated_room_poly.boundary.buffer(tolerance).contains(w_edge)]
 
-        window_center_rotated = Point2D((window_x1 + window_x2) / 2, (window_y1 + window_y2) / 2)
+        window_center_rotated = Point2D((window_x1 + window_x2) *0.5, (window_y1 + window_y2) *0.5)
         if len(res)>0:
             edge_on_boundary = res[0]
             edge_coords = list(edge_on_boundary.coords)
             window_center_rotated = Point2D(
-                (edge_coords[0][0] + edge_coords[1][0]) / 2,
-                (edge_coords[0][1] + edge_coords[1][1]) / 2
+                (edge_coords[0][0] + edge_coords[1][0]) *0.5,
+                (edge_coords[0][1] + edge_coords[1][1]) *0.5
             )
         
         rotated_polygon = RoomPolygon(rotated_polygon)
@@ -345,7 +344,7 @@ class WindowGeometry:
         """
         if self._direction_angle is None:
             return max(self._x_max - self._x_min, self._y_max - self._y_min)
-        edge_angle = self._direction_angle + math.pi / 2
+        edge_angle = self._direction_angle + math.pi *0.5
         return GeometryOps.projection_dist(self._corner1, self._corner2, edge_angle)
             
     @property
@@ -411,8 +410,8 @@ class WindowGeometry:
     
     @property
     def niche_center(self)->Point2D:
-        return Point2D((self.x1 + self.x2) / 2, 
-                       (self.y1 + self.y2) / 2)
+        return Point2D((self.x1 + self.x2) *0.5, 
+                       (self.y1 + self.y2) *0.5)
 
     @property
     def direction_angle(self) -> float|None:
@@ -572,8 +571,8 @@ class WindowGeometry:
         Raises:
             ValueError: If window is not on any polygon edge
         """
-        
-        
+
+
         # w_edges = self.get_candidate_edges()
         # # Find which polygon edge contains one of the window edges
         # polygon_coords =  room_polygon.get_coords()
@@ -589,10 +588,36 @@ class WindowGeometry:
         w_edges = self.get_candidate_edges()
         w_edge = w_edges[j]
         edge_coords = list(w_edge.coords)
-        print("window reference edge", edge_coords)
 
         return Point2D(0.5*(edge_coords[0][0] + edge_coords[1][0]),
                        0.5*(edge_coords[0][1] + edge_coords[1][1]) )
+
+    def get_reference_pixel(self) -> Tuple[int, int]:
+        """
+        Calculate window reference point in pixel coordinates of the 128x128 image.
+
+        Following DECODING_GUIDE Step 1:
+        The window reference point is at the room-facing edge (room facade).
+        Formula: room_facade_x = IMAGE_SIZE - WINDOW_OFFSET_PX - wall_thickness_px - ROOM_FACADE_OFFSET_PX
+
+        Returns:
+            (ref_x, ref_y) in pixels at 128x128 resolution
+        """
+        # Convert wall thickness to pixels using round (0.300m = 3px, not 2px)
+        wall_thickness_px = round(self.wall_thickness / GRAPHICS_CONSTANTS.BASE_RESOLUTION_M_PER_PX)
+
+        # Calculate room facade position
+        room_facade_x = (
+            GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX -
+            GRAPHICS_CONSTANTS.WINDOW_OFFSET_PX -
+            wall_thickness_px -
+            GRAPHICS_CONSTANTS.ROOM_FACADE_OFFSET_PX
+        )
+
+        # Reference point is at vertical center
+        ref_y = GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX // 2
+
+        return (room_facade_x, ref_y)
 
     def calculate_direction_from_polygon(
         self,
@@ -636,7 +661,7 @@ class WindowGeometry:
         edge_angle = math.atan2(v2[1] - v1[1], v2[0] - v1[0])
 
 
-        perps = [edge_angle + math.pi / 2, edge_angle - math.pi / 2]
+        perps = [edge_angle + math.pi *0.5, edge_angle - math.pi *0.5]
         # Get center point of the window edge that's on the polygon boundary
         edge_coords = list(edge.coords)
 

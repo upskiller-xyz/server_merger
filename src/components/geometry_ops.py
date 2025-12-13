@@ -93,8 +93,8 @@ class GeometryOps:
     @classmethod
     def perpendicular_dir_inside_polygon(cls, room_poly, edge_coords, perp)->bool:
         test_offset = 0.1
-        edge_center_x = (edge_coords[0][0] + edge_coords[1][0]) / 2
-        edge_center_y = (edge_coords[0][1] + edge_coords[1][1]) / 2
+        edge_center_x = (edge_coords[0][0] + edge_coords[1][0]) *0.5
+        edge_center_y = (edge_coords[0][1] + edge_coords[1][1]) *0.5
         test_x1 = edge_center_x + test_offset * math.cos(perp)
         test_y1 = edge_center_y + test_offset * math.sin(perp)
         test_point1 = ShapelyPoint(test_x1, test_y1)

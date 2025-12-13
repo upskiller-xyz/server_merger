@@ -190,9 +190,8 @@ PARAMETER_REGIONS = {
 
     # Obstruction bar parameters
     ParameterName.BALCONY_REFLECTANCE.value: RegionType.OBSTRUCTION_BAR,
-    ParameterName.BALCONY_REFLECTANCE.value: RegionType.OBSTRUCTION_BAR,
     ParameterName.OBSTRUCTION_ANGLE_HORIZON.value: RegionType.OBSTRUCTION_BAR,
-   
+
     ParameterName.CONTEXT_REFLECTANCE.value: RegionType.OBSTRUCTION_BAR,
     "context_reflectance": RegionType.OBSTRUCTION_BAR,
     ParameterName.OBSTRUCTION_ANGLE_ZENITH.value: RegionType.OBSTRUCTION_BAR
