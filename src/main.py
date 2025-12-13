@@ -10,6 +10,7 @@ os.environ['OMP_NUM_THREADS'] = '1'
 import sys
 from pathlib import Path
 import logging
+from enum import Enum
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -19,7 +20,30 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from werkzeug.exceptions import BadRequest
 
-from src.server.enums import ContentType, HTTPStatus
+from src.server.enums import ContentType, HTTPStatus, LogLevel
+from src.server.services.logging import StructuredLogger
+from src.server.controllers.base_controller import ServerController
+from src.server.services.df_aggregation import DFAggregationService
+
+
+class ServerConfig:
+    """Server configuration constants"""
+    DEFAULT_HOST = "0.0.0.0"
+    DEFAULT_PORT = 8080
+    DEFAULT_ENV_PORT = 8081
+    DEFAULT_OUTPUT_SCALE = 0.1
+
+
+class ServiceName(Enum):
+    """Service name enumeration"""
+    DF_AGGREGATION = "df_aggregation"
+
+
+class RequestField(Enum):
+    """Request field names"""
+    ROOM_POLYGON = "room_polygon"
+    WINDOWS = "windows"
+    SIMULATIONS = "simulations"
 
 
 
@@ -37,11 +61,6 @@ class ServerApplication:
 
     def _setup_dependencies(self) -> None:
         """Setup all dependencies using dependency injection"""
-        from src.server.services.logging import StructuredLogger
-        from src.server.enums import LogLevel
-        from src.server.controllers.base_controller import ServerController
-        from src.server.services.df_aggregation import DFAggregationService
-
         # Configure root logger for detailed debugging
         logging.basicConfig(
             level=logging.DEBUG,
@@ -53,10 +72,10 @@ class ServerApplication:
         self._logger = StructuredLogger("Server", LogLevel.INFO)
 
         # DF Aggregation Service
-        df_service = DFAggregationService(output_scale=0.1)
+        df_service = DFAggregationService(output_scale=ServerConfig.DEFAULT_OUTPUT_SCALE)
 
         services = {
-            "df_aggregation": df_service
+            ServiceName.DF_AGGREGATION.value: df_service
         }
 
         # Controller
@@ -143,19 +162,23 @@ class ServerApplication:
                 raise BadRequest("No JSON data provided")
 
             # Validate required fields
-            required_fields = ['room_polygon', 'windows', 'simulations']
+            required_fields = [
+                RequestField.ROOM_POLYGON.value,
+                RequestField.WINDOWS.value,
+                RequestField.SIMULATIONS.value
+            ]
             for field in required_fields:
                 if field not in data:
                     raise BadRequest(f"Missing required field: {field}")
 
             # Get DF aggregation service
-            df_service = self._controller.get_service('df_aggregation')
+            df_service = self._controller.get_service(ServiceName.DF_AGGREGATION.value)
 
             # Process request
             result = df_service.process_request(
-                room_polygon=data['room_polygon'],
-                windows_data=data['windows'],
-                simulations=data['simulations']
+                room_polygon=data[RequestField.ROOM_POLYGON.value],
+                windows_data=data[RequestField.WINDOWS.value],
+                simulations=data[RequestField.SIMULATIONS.value]
             )
 
             return jsonify(result)
@@ -183,8 +206,8 @@ class ServerLauncher:
     @staticmethod
     def run_server(
         app: ServerApplication,
-        host: str = "0.0.0.0",
-        port: int = 8080,
+        host: str = ServerConfig.DEFAULT_HOST,
+        port: int = ServerConfig.DEFAULT_PORT,
         debug: bool = True
     ) -> None:
         """Run the server"""
@@ -202,7 +225,7 @@ def main() -> None:
     """Main entry point"""
     launcher = ServerLauncher()
     application = launcher.create_application()
-    port = int(os.getenv("PORT", 8081))
+    port = int(os.getenv("PORT", ServerConfig.DEFAULT_ENV_PORT))
     launcher.run_server(application, port=port, debug=True)
 
 
