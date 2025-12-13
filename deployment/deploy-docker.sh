@@ -1,12 +1,12 @@
 #!/bin/bash
 set -e
 
-# Encoder Server - Docker Deployment Script
+# Server Merger - Docker Deployment Script
 # Usage: sudo bash deploy-docker.sh [options]
 #
 # Options:
 #   --with-nginx        Deploy with nginx reverse proxy
-#   --port PORT         Set the host port (default: 8081)
+#   --port PORT         Set the host port (default: 8084)
 #   --build             Force rebuild the Docker image
 #   --debug             Enable debug logging (verbose output)
 
@@ -18,7 +18,7 @@ NC='\033[0m'
 
 # Default values
 WITH_NGINX=false
-HOST_PORT=8082
+HOST_PORT=8084
 FORCE_BUILD=false
 DEBUG_MODE=false
 
@@ -49,7 +49,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo -e "${GREEN}========================================${NC}"
-echo -e "${GREEN}Encoder Server - Docker Deployment${NC}"
+echo -e "${GREEN}Server Merger - Docker Deployment${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 
@@ -101,8 +101,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Update port in docker-compose.yml
-echo -e "${YELLOW}Configuring port mapping: $HOST_PORT:8082${NC}"
-sed -i.bak "s/\"[0-9]*:8082\"/\"$HOST_PORT:8082\"/g" docker-compose.yml
+echo -e "${YELLOW}Configuring port mapping: $HOST_PORT:8084${NC}"
+sed -i.bak "s/\"[0-9]*:8084\"/\"$HOST_PORT:8084\"/g" docker-compose.yml
 
 # Configure environment file based on debug mode
 if [ "$DEBUG_MODE" = true ]; then
@@ -112,7 +112,7 @@ if [ "$DEBUG_MODE" = true ]; then
     else
         cat > .env.docker << EOF
 # Docker Environment Configuration - DEBUG MODE
-PORT=8082
+PORT=8084
 FLASK_ENV=development
 FLASK_DEBUG=True
 LOG_LEVEL=DEBUG
@@ -130,7 +130,7 @@ else
         echo -e "${YELLOW}Configuring PRODUCTION mode environment${NC}"
         cat > .env.docker << EOF
 # Docker Environment Configuration
-PORT=8082
+PORT=8084
 FLASK_ENV=production
 FLASK_DEBUG=False
 LOG_LEVEL=INFO
@@ -148,27 +148,27 @@ fi
 mkdir -p logs
 
 # Stop existing instances of this container only
-echo -e "${YELLOW}Stopping existing instances of encoder-server...${NC}"
+echo -e "${YELLOW}Stopping existing instances of df-merger-server...${NC}"
 
-# Stop and remove encoder-server container if it exists
-if docker ps -a --format '{{.Names}}' | grep -q '^encoder-server$'; then
-    echo -e "${YELLOW}  Stopping encoder-server container...${NC}"
-    docker stop encoder-server 2>/dev/null || true
-    docker rm encoder-server 2>/dev/null || true
-    echo -e "${GREEN}  ✓ encoder-server stopped and removed${NC}"
+# Stop and remove df-merger-server container if it exists
+if docker ps -a --format '{{.Names}}' | grep -q '^df-merger-server$'; then
+    echo -e "${YELLOW}  Stopping df-merger-server container...${NC}"
+    docker stop df-merger-server 2>/dev/null || true
+    docker rm df-merger-server 2>/dev/null || true
+    echo -e "${GREEN}  ✓ df-merger-server stopped and removed${NC}"
 fi
 
-# Stop and remove encoder-nginx container if it exists (for --with-nginx deployments)
-if docker ps -a --format '{{.Names}}' | grep -q '^encoder-nginx$'; then
-    echo -e "${YELLOW}  Stopping encoder-nginx container...${NC}"
-    docker stop encoder-nginx 2>/dev/null || true
-    docker rm encoder-nginx 2>/dev/null || true
-    echo -e "${GREEN}  ✓ encoder-nginx stopped and removed${NC}"
+# Stop and remove df-merger-nginx container if it exists (for --with-nginx deployments)
+if docker ps -a --format '{{.Names}}' | grep -q '^df-merger-nginx$'; then
+    echo -e "${YELLOW}  Stopping df-merger-nginx container...${NC}"
+    docker stop df-merger-nginx 2>/dev/null || true
+    docker rm df-merger-nginx 2>/dev/null || true
+    echo -e "${GREEN}  ✓ df-merger-nginx stopped and removed${NC}"
 fi
 
 # Clean up unused networks for this project only
-docker network ls --format '{{.Name}}' | grep -q '^deployment_encoder-network$' && \
-    docker network rm deployment_encoder-network 2>/dev/null || true
+docker network ls --format '{{.Name}}' | grep -q '^deployment_df-merger-network$' && \
+    docker network rm deployment_df-merger-network 2>/dev/null || true
 
 # Build and start containers
 if [ "$FORCE_BUILD" = true ]; then
@@ -185,7 +185,7 @@ if [ "$WITH_NGINX" = true ]; then
     $DOCKER_COMPOSE --profile with-nginx up -d
 else
     echo -e "${YELLOW}Starting services...${NC}"
-    $DOCKER_COMPOSE up -d encoder-server
+    $DOCKER_COMPOSE up -d df-merger-server
 fi
 
 # Wait for service to be ready
@@ -193,7 +193,7 @@ echo -e "${YELLOW}Waiting for service to start...${NC}"
 sleep 5
 
 # Check if service is running
-if docker ps | grep -q encoder-server; then
+if docker ps | grep -q df-merger-server; then
     echo -e "${GREEN}✓ Service is running${NC}"
 
     # Test health check
@@ -204,11 +204,11 @@ if docker ps | grep -q encoder-server; then
         echo -e "${GREEN}✓ Health check passed${NC}"
     else
         echo -e "${RED}✗ Health check failed${NC}"
-        echo -e "${YELLOW}Check logs: docker logs encoder-server${NC}"
+        echo -e "${YELLOW}Check logs: docker logs df-merger-server${NC}"
     fi
 else
     echo -e "${RED}✗ Service failed to start${NC}"
-    echo -e "${YELLOW}Check logs: docker logs encoder-server${NC}"
+    echo -e "${YELLOW}Check logs: docker logs df-merger-server${NC}"
     exit 1
 fi
 
@@ -218,9 +218,9 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Deployment Complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-echo -e "Container: ${GREEN}encoder-server${NC}"
+echo -e "Container: ${GREEN}df-merger-server${NC}"
 echo -e "Host Port: ${GREEN}$HOST_PORT${NC}"
-echo -e "Container Port: ${GREEN}8080${NC}"
+echo -e "Container Port: ${GREEN}8084${NC}"
 if [ "$WITH_NGINX" = true ]; then
     echo -e "Nginx: ${GREEN}enabled (ports 80, 443)${NC}"
 fi
@@ -233,11 +233,11 @@ else
 fi
 echo ""
 echo -e "${YELLOW}Useful Commands:${NC}"
-echo -e "  View logs:           ${GREEN}docker logs -f encoder-server${NC}"
+echo -e "  View logs:           ${GREEN}docker logs -f df-merger-server${NC}"
 echo -e "  Stop service:        ${GREEN}$DOCKER_COMPOSE down${NC}"
 echo -e "  Restart service:     ${GREEN}$DOCKER_COMPOSE restart${NC}"
 echo -e "  View containers:     ${GREEN}docker ps${NC}"
-echo -e "  Execute in container: ${GREEN}docker exec -it encoder-server bash${NC}"
+echo -e "  Execute in container: ${GREEN}docker exec -it df-merger-server bash${NC}"
 echo ""
 echo -e "${YELLOW}Test the API:${NC}"
 echo -e "  ${GREEN}curl http://localhost:$HOST_PORT/${NC}"
