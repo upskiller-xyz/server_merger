@@ -71,7 +71,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-Longer description
+**DF Aggregation Service** - A multi-window daylight factor aggregation service that merges simulation results from multiple windows into a single room polygon representation. Built with OOP principles, design patterns, and clean architecture.
 
 
 
@@ -81,8 +81,11 @@ Longer description
 
 ### Built With
 
-* [Python](https://www.python.org/)
-* [Flask](https://flask.palletsprojects.com/)
+* [Python](https://www.python.org/) - Core language
+* [Flask](https://flask.palletsprojects.com/) - Web framework
+* [NumPy](https://numpy.org/) - Numerical computing
+* [OpenCV](https://opencv.org/) - Image processing
+* [Shapely](https://shapely.readthedocs.io/) - Geometry operations
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -141,57 +144,43 @@ poetry run jupyter notebook example/demo.ipynb
 
 ### 🔧 API Endpoints
 
-The server provides REST API endpoints for model predictions:
+#### POST /merge
+Aggregate DF values from multiple windows into a room polygon.
 
-#### Health Check
-Check if the server is running and model is loaded:
-
+**Request:**
 ```python
 import requests
 
-response = requests.get("http://localhost:8000/")
-print(response.json())
-# Output: {"status": "ready", "model_loaded": true, "timestamp": "2024-01-01T00:00:00Z"}
-```
+data = {
+    "room_polygon": [[0, 0], [3, 0], [3, 4], [0, 4]],
+    "windows": {
+        "window_1": {
+            "x1": 0.0, "y1": 0.0, "z1": 1.0,
+            "x2": 1.5, "y2": 0.3, "z2": 2.5,
+            "direction_angle": 0.0
+        }
+    },
+    "simulations": {
+        "window_1": {
+            "df_values": [[...]],  # 2D array of DF values
+            "mask": [[...]]        # 2D binary mask
+        }
+    }
+}
 
-#### Image Prediction
-Submit an image for model prediction:
-
-```python
-import requests
-
-# Send image file for prediction
-with open("input_image.jpg", "rb") as f:
-    files = {"file": f}
-    response = requests.post("http://localhost:8000/run", files=files)
-
+response = requests.post("http://localhost:8000/merge", json=data)
 result = response.json()
-print(f"Prediction result: {result}")
+
+print(f"Result shape: {len(result['result'])}x{len(result['result'][0])}")
+print(f"Mask shape: {len(result['mask'])}x{len(result['mask'][0])}")
 ```
 
-#### Example with OpenCV preprocessing:
-
-```python
-import cv2
-import requests
-import numpy as np
-from io import BytesIO
-
-# Load and preprocess image
-image = cv2.imread("input.jpg")
-image = cv2.resize(image, (480, 640))  # Resize to model input size
-
-# Convert to bytes
-_, buffer = cv2.imencode('.jpg', image)
-image_bytes = BytesIO(buffer)
-
-# Send prediction request
-files = {"file": ("image.jpg", image_bytes, "image/jpeg")}
-response = requests.post("http://localhost:8000/run", files=files)
-
-prediction = response.json()
-print(f"Model output shape: {prediction.get('output_shape')}")
-print(f"Processing time: {prediction.get('processing_time_ms')}ms")
+**Response:**
+```json
+{
+  "result": [[...]],  // Aggregated DF matrix
+  "mask": [[...]]     // Room polygon mask
+}
 ```
 
 ### Deployment
@@ -286,17 +275,26 @@ Set up the Model Server locally for development and testing:
 The Model Server follows object-oriented design principles with clean separation of concerns:
 
 ```
-ModelServerApplication
-├── DownloadStrategy (handles model downloads)
-└── StructuredLogger (logging system)
+src/server/services/
+├── df_aggregation.py              # Main service orchestration
+├── df_aggregation_models.py       # Data models
+├── room_df_matrix.py              # DF matrix management
+├── rotation_helper.py             # Rotation operations
+├── window_processor.py            # Image transformations
+└── window_aggregation_orchestrator.py  # Processing pipeline
 ```
 
-**Key Components:**
-- **Dependency Injection**: All services are injected through constructors
-- **Factory Patterns**: Services are created using factory classes
-- **Strategy Pattern**: Different loading and processing strategies
-- **Single Responsibility**: Each class has one clear purpose
-- **Abstract Base Classes**: Define contracts for implementations
+**Design Principles (CLAUDE.md):**
+- **OOP-First**: Classes for all major functionality
+- **Single Responsibility**: Each class/method does one thing
+- **Design Patterns**: Strategy, Factory, Dependency Injection
+- **No Magic**: Constants in config classes, no inline imports
+- **Type Safety**: Type hints on all parameters/returns
+
+**Algorithm:**
+1. Create room mask from polygon
+2. For each window: standardize → rotate → crop → accumulate
+3. Apply room mask to final result
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
