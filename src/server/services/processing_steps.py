@@ -219,6 +219,8 @@ class CalculateTranslationStep(ProcessingStep):
         """Calculate translation vector"""
         self.logger.debug(f"Step 5: Calculating translation for '{context.input.window_id}'")
 
+        
+        
         context.translation = Point2D(
             context.position.room_coord_pixels.x - context.position.ref_px_rotated[0] + context.cropped.offset[0],
             context.position.room_coord_pixels.y - context.position.ref_px_rotated[1] + context.cropped.offset[1]
