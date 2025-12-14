@@ -62,8 +62,8 @@ class WindowProcessingContext:
 
     # Processing state (populated by steps)
     position: Optional[PositionData] = None
-    standardized: Optional[ImagePair] = None
-    rotated: Optional[ImagePair] = None
+    # standardized: Optional[ImagePair] = None
+    # rotated: Optional[ImagePair] = None
     cropped: Optional[CropData] = None
     translation: Optional[Point2D] = None
 
@@ -150,7 +150,7 @@ class StandardizeWindowStep(ProcessingStep):
             context.input.window_id
         )
 
-        context.standardized = ImagePair(df_std, mask_std)
+        context.original_images = ImagePair(df_std, mask_std)
 
         return context
 
@@ -168,16 +168,17 @@ class RotateWindowStep(ProcessingStep):
 
         df_rotated, mask_rotated, ref_px_rotated = (
             self.window_processor.rotate_window_images(
-                context.standardized.df_values,
-                context.standardized.mask,
+                context.original_images.df_values,
+                context.original_images.mask,
                 context.position.ref_px_original,
                 -context.input.window.direction_angle,
                 context.input.window_id
             )
         )
 
-        context.rotated = ImagePair(df_rotated, mask_rotated)
+        context.original_images = ImagePair(df_rotated, mask_rotated)
         context.position.ref_px_rotated = ref_px_rotated
+        
 
         return context
 
@@ -192,20 +193,19 @@ class CropWindowStep(ProcessingStep):
     def run(self, context: WindowProcessingContext) -> WindowProcessingContext:
         """Crop to mask bounds"""
         self.logger.debug(f"Step 4: Cropping window '{context.input.window_id}'")
-
+        
         df_cropped, mask_cropped, crop_offset = (
             self.window_processor.crop_to_visible_bounds(
-                context.rotated.df_values,
-                context.rotated.mask,
+                context.original_images.df_values,
+                context.original_images.mask,
                 context.input.window_id
             )
         )
-
+        context.original_images = ImagePair(df_cropped, mask_cropped)
         context.cropped = CropData(
             images=ImagePair(df_cropped, mask_cropped),
             offset=crop_offset
         )
-
         return context
 
 
@@ -287,7 +287,6 @@ class WindowProcessingPipeline:
             input=WindowInputData(window_id, window, room_polygon),
             original_images=ImagePair(df_values, mask)
         )
-
         # Execute each step in sequence
         for step in self.steps:
             context = step.run(context)

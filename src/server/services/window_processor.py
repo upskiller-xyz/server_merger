@@ -157,7 +157,6 @@ class WindowProcessor:
         df_rotated, mask_rotated = self._apply_transformation(
             df_values, mask, rotate_df_transform, rotate_mask_transform
         )
-
         # Rotate the reference point
         ref_rotated = self.rotation_helper.rotate_point(window_ref_px, rotation_matrix)
 

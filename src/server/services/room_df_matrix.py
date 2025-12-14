@@ -58,6 +58,8 @@ class RoomDFMatrix:
             translation: Translation to apply
             window_id: Window identifier for logging
         """
+
+        
         window_height, window_width = df_window.shape
         offset_y, offset_x = int(translation.y), int(translation.x)
 
@@ -94,6 +96,7 @@ class RoomDFMatrix:
                 region.src_x_start:region.src_x_end
             ]
 
+            
             masked_values = window_region_df * window_region_mask
             contribution_sum = masked_values.sum()
 
@@ -128,7 +131,6 @@ class RoomDFMatrix:
         Returns:
             OverlapRegion with source and destination boundaries
         """
-        print("-----PARAMETERS", window_height, window_width, offset_x, offset_y)
         return OverlapRegion(
             src_y_start=max(AggregationConstants.ZERO_VALUE, -offset_y),
             src_y_end=min(window_height, self.height_px - offset_y),
