@@ -43,7 +43,7 @@ class RequestField(Enum):
     """Request field names"""
     ROOM_POLYGON = "room_polygon"
     WINDOWS = "windows"
-    SIMULATIONS = "simulations"
+    SIMULATION = "simulation"
 
 
 
@@ -139,7 +139,7 @@ class ServerApplication:
                 },
                 ...
             },
-            "simulations": {
+            "simulation": {
                 "window1": {
                     "df_values": [[...], [...], ...],  # 384x384 or 128x128
                     "mask": [[...], [...], ...]         # Same dimensions
@@ -165,7 +165,7 @@ class ServerApplication:
             required_fields = [
                 RequestField.ROOM_POLYGON.value,
                 RequestField.WINDOWS.value,
-                RequestField.SIMULATIONS.value
+                RequestField.SIMULATION.value
             ]
             for field in required_fields:
                 if field not in data:
@@ -178,7 +178,7 @@ class ServerApplication:
             result = df_service.process_request(
                 room_polygon=data[RequestField.ROOM_POLYGON.value],
                 windows_data=data[RequestField.WINDOWS.value],
-                simulations=data[RequestField.SIMULATIONS.value]
+                simulations=data[RequestField.SIMULATION.value]
             )
 
             return jsonify(result)
