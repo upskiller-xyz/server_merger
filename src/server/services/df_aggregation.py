@@ -9,10 +9,12 @@ simulation results from multiple windows into a single room polygon representati
 from typing import Dict, List, Tuple
 from pathlib import Path
 import numpy as np
+import cv2
 import logging
 
 from src.components.enums import AggregationConstants, ParameterName
 from src.components.geometry_ops import Point2D
+from src.components.graphics_constants import GRAPHICS_CONSTANTS
 from src.components.polygon_rasterizer import PolygonRasterizer
 from src.components.window import RoomPolygon, WindowGeometry
 from src.server.services.df_aggregation_models import ImageScale, SimulationData
@@ -232,12 +234,15 @@ class DFAggregationService:
         df_values = np.array(sim_dict['df_values'], dtype=np.float32)
         mask = np.array(sim_dict['mask'], dtype=np.uint8)
 
-        # Validate dimensions match
+        # Resize both to 128x128 if shapes don't match
         if df_values.shape != mask.shape:
-            raise ValueError(
+            self.logger.warning(
                 f"Window {window_id}: df_values shape {df_values.shape} "
-                f"does not match mask shape {mask.shape}. Both must be the same size."
+                f"does not match mask shape {mask.shape}. Resizing both to 128x128."
             )
+            target_size = (GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX, GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX)
+            df_values = cv2.resize(df_values, target_size, interpolation=cv2.INTER_NEAREST)
+            mask = cv2.resize(mask, target_size, interpolation=cv2.INTER_NEAREST)
 
         # Calculate scale proportionally from image size
         img_size = df_values.shape[0]
