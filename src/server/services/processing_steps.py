@@ -205,6 +205,7 @@ class CropWindowStep(ProcessingStep):
             )
         )
         context.original_images = ImagePair(df_cropped, mask_cropped)
+        print("shape df croppe", df_cropped.shape)
         context.cropped = CropData(
             images=ImagePair(df_cropped, mask_cropped),
             offset=crop_offset

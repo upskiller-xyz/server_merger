@@ -69,7 +69,7 @@ class WindowAggregationOrchestrator:
         )
 
         
-
+        processed_window.
         # Accumulate to room matrix
         df_matrix_container.accumulate_window(
             processed_window.df_cropped,
@@ -107,7 +107,7 @@ class WindowAggregationOrchestrator:
             room_polygon=room_original
         )
 
-
+        print("orchestrator", context.original_images.df_values.shape)
         # Return as ProcessedWindow
         return ProcessedWindow(
             df_cropped=context.original_images.df_values,
