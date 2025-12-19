@@ -112,10 +112,31 @@ class CalculateWindowPositionStep(ProcessingStep):
         # Get window reference point on room polygon (meters)
         room_coord_meters = context.input.window.reference_from_polygon(context.input.room_polygon)
 
+        # Validate room_coord_meters
+        if room_coord_meters.x is None or room_coord_meters.y is None:
+            raise ValueError(
+                f"Window {context.input.window_id}: reference_from_polygon returned None coordinates: "
+                f"x={room_coord_meters.x}, y={room_coord_meters.y}"
+            )
+
         # Convert to pixels
-        room_coord_pixels = self.scale_converter.point_meters_to_pixels(
-            context.input.room_polygon.point_to_zero(room_coord_meters)
-        )
+        point_shifted = context.input.room_polygon.point_to_zero(room_coord_meters)
+
+        # Validate shifted point
+        if point_shifted.x is None or point_shifted.y is None:
+            raise ValueError(
+                f"Window {context.input.window_id}: point_to_zero returned None coordinates: "
+                f"x={point_shifted.x}, y={point_shifted.y}"
+            )
+
+        room_coord_pixels = self.scale_converter.point_meters_to_pixels(point_shifted)
+
+        # Validate converted pixels
+        if room_coord_pixels.x is None or room_coord_pixels.y is None:
+            raise ValueError(
+                f"Window {context.input.window_id}: point_meters_to_pixels returned None coordinates: "
+                f"x={room_coord_pixels.x}, y={room_coord_pixels.y}"
+            )
 
         # Get window reference point in 128x128 image
         ref_px_original = context.input.window.get_reference_pixel()
