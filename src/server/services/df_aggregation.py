@@ -104,10 +104,10 @@ class RoomDFAggregator:
             ),
             simulations.items()
         ))
-
+        self.logger.info("windows processed")
         # Step 4: Apply room mask to final result
         df_matrix_container.apply_mask()
-
+        self.logger.info("Mask applied")
         return df_matrix_container.get_result()
 
     def _create_room_mask(
@@ -173,7 +173,7 @@ class DFAggregationService:
 
         # Aggregate
         df_matrix, room_mask = self.aggregator.aggregate(room_poly, sim_objects)
-
+        self.logger.info("Aggregation happened")
         # Convert to lists for JSON serialization
         return {
             'result': df_matrix.tolist(),
