@@ -119,11 +119,8 @@ class RoomDFMatrix:
                 region.src_x_start:region.src_x_end
             ]
 
-            self.logger.info("multiplying values")
             masked_values = window_region_df * window_region_mask
-            self.logger.info("multiplied values")
             contribution_sum = masked_values.sum()
-            self.logger.info("summed")
 
             self.logger.info(
                 f"  Adding {np.count_nonzero(window_region_mask)} masked pixels, "
@@ -134,7 +131,6 @@ class RoomDFMatrix:
                 region.dst_y_start:region.dst_y_end,
                 region.dst_x_start:region.dst_x_end
             ] += masked_values
-            self.logger.info("window accumulated")
         else:
             self.logger.warning(f"  No valid overlap region (size: {region.src_height}x{region.src_width})")
 
@@ -170,8 +166,12 @@ class RoomDFMatrix:
 
     def apply_mask(self) -> None:
         """Apply room mask to final result."""
+        self.logger.info(self.room_mask is None)
         if self.room_mask is not None:
+            self.logger.info(np.unique(self.df_matrix))
+            self.logger.info(np.unique(self.room_mask))
             self.df_matrix *= self.room_mask
+            self.logger.info("multiplication succeeded")
 
     def get_result(self) -> Tuple[np.ndarray, np.ndarray]:
         """
