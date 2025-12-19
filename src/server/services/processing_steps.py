@@ -205,7 +205,9 @@ class CropWindowStep(ProcessingStep):
             )
         )
         context.original_images = ImagePair(df_cropped, mask_cropped)
-        print("shape df croppe", df_cropped.shape)
+        
+        self.logger.debug(f"  -----cr: {df_cropped.shape}")
+        self.logger.debug(f"  -----: {context.original_images.df_values.shape}")
         context.cropped = CropData(
             images=ImagePair(df_cropped, mask_cropped),
             offset=crop_offset
@@ -231,6 +233,7 @@ class CalculateTranslationStep(ProcessingStep):
         )
 
         self.logger.debug(f"  Translation: {context.translation}")
+        self.logger.debug(f"  -----: {context.original_images.df_values.shape}")
 
         return context
 
