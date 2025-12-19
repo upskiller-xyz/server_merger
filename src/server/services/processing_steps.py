@@ -225,8 +225,19 @@ class CalculateTranslationStep(ProcessingStep):
         """Calculate translation vector"""
         self.logger.debug(f"Step 5: Calculating translation for '{context.input.window_id}'")
 
-        
-        
+        # Validate all components before calculation
+        if context.position.room_coord_pixels.x is None or context.position.room_coord_pixels.y is None:
+            raise ValueError(
+                f"Room coordinates contain None: x={context.position.room_coord_pixels.x}, "
+                f"y={context.position.room_coord_pixels.y}"
+            )
+
+        if context.position.ref_px_rotated is None or None in context.position.ref_px_rotated:
+            raise ValueError(f"Rotated reference point is None or contains None: {context.position.ref_px_rotated}")
+
+        if context.cropped.offset is None or None in context.cropped.offset:
+            raise ValueError(f"Crop offset is None or contains None: {context.cropped.offset}")
+
         context.translation = Point2D(
             context.position.room_coord_pixels.x - context.position.ref_px_rotated[0] + context.cropped.offset[0],
             context.position.room_coord_pixels.y - context.position.ref_px_rotated[1] + context.cropped.offset[1]
