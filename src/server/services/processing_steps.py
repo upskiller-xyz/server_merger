@@ -166,12 +166,15 @@ class RotateWindowStep(ProcessingStep):
         """Apply rotation transformation"""
         self.logger.debug(f"Step 3: Rotating window '{context.input.window_id}'")
 
+        # Handle None direction_angle (default to 0)
+        rotation_angle = -context.input.window.direction_angle if context.input.window.direction_angle is not None else 0
+
         df_rotated, mask_rotated, ref_px_rotated = (
             self.window_processor.rotate_window_images(
                 context.original_images.df_values,
                 context.original_images.mask,
                 context.position.ref_px_original,
-                -context.input.window.direction_angle,
+                rotation_angle,
                 context.input.window_id
             )
         )
