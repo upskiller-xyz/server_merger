@@ -68,8 +68,6 @@ class WindowAggregationOrchestrator:
             window_id, sim_data, room_original
         )
 
-        
-        processed_window.
         # Accumulate to room matrix
         df_matrix_container.accumulate_window(
             processed_window.df_cropped,
