@@ -59,8 +59,31 @@ class RoomDFMatrix:
             window_id: Window identifier for logging
         """
 
-        
+
         window_height, window_width = df_window.shape
+
+        # Debug logging to identify None/NaN values
+        self.logger.debug(f"  Translation before int(): x={translation.x}, y={translation.y}, types: x={type(translation.x)}, y={type(translation.y)}")
+
+        # Validate translation before converting to int
+        if translation.y is None or translation.x is None:
+            raise ValueError(
+                f"Translation contains None: x={translation.x}, y={translation.y} for window {window_id}"
+            )
+
+        # Check for NaN using numpy
+        try:
+            if np.isnan(translation.y) or np.isnan(translation.x):
+                raise ValueError(
+                    f"Translation contains NaN: x={translation.x}, y={translation.y} for window {window_id}"
+                )
+        except TypeError:
+            # If np.isnan fails, the value might be None or another non-numeric type
+            raise ValueError(
+                f"Translation contains invalid type: x={translation.x} (type: {type(translation.x)}), "
+                f"y={translation.y} (type: {type(translation.y)}) for window {window_id}"
+            )
+
         offset_y, offset_x = int(translation.y), int(translation.x)
 
         # Calculate overlap regions using helper
@@ -96,9 +119,11 @@ class RoomDFMatrix:
                 region.src_x_start:region.src_x_end
             ]
 
-            
+            self.logger.info("multiplying values")
             masked_values = window_region_df * window_region_mask
+            self.logger.info("multiplied values")
             contribution_sum = masked_values.sum()
+            self.logger.info("summed")
 
             self.logger.info(
                 f"  Adding {np.count_nonzero(window_region_mask)} masked pixels, "
@@ -109,6 +134,7 @@ class RoomDFMatrix:
                 region.dst_y_start:region.dst_y_end,
                 region.dst_x_start:region.dst_x_end
             ] += masked_values
+            self.logger.info("window accumulated")
         else:
             self.logger.warning(f"  No valid overlap region (size: {region.src_height}x{region.src_width})")
 

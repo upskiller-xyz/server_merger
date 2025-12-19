@@ -105,8 +105,7 @@ class WindowAggregationOrchestrator:
             mask=sim_data.mask,
             room_polygon=room_original
         )
-
-        print("orchestrator", context.original_images.df_values.shape)
+        
         # Return as ProcessedWindow
         return ProcessedWindow(
             df_cropped=context.original_images.df_values,
