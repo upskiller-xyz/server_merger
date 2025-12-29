@@ -94,18 +94,5 @@ elif status == "ready":
 4. **Follow naming conventions** - Clear, descriptive names
 5. **Write self-documenting code** - Code should explain itself
 6. **Use type hints** - Always specify parameter and return types
-7. **ALL IMPORTS ON TOP** - Never import inside functions or methods, all imports must be at the top of the file
+7. **ALL IMPORTS ON TOP** - MANDATORY: All imports must be at the top of the file, never inside function or method bodies
 
-## Refactoring Notes
-
-- Current main.py violates OOP principles - needs complete refactor
-- Global variables should be encapsulated in classes
-- Functions should be methods of appropriate classes
-- Need proper separation of concerns
-
-## Next Steps
-
-1. Refactor main.py to follow these principles
-2. Create proper class hierarchy for server components
-3. Implement design patterns throughout codebase
-4. Replace all print statements with structured logging

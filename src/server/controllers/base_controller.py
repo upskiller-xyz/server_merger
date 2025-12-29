@@ -58,3 +58,20 @@ class ServerController(IServerController):
             "status": self._status.value,
             "services": components
         }
+
+    def get_service(self, service_name: str) -> Any:
+        """
+        Get a service by name
+
+        Args:
+            service_name: Name of the service to retrieve
+
+        Returns:
+            Service instance
+
+        Raises:
+            KeyError: If service not found
+        """
+        if service_name not in self._services:
+            raise KeyError(f"Service '{service_name}' not found")
+        return self._services[service_name]

@@ -1,19 +1,23 @@
-# Production dependencies for Model Server
-# Generated from pyproject.toml
-
+# Server Merger - DF Aggregation Service
+# Production dependencies
 
 # Web Framework & Server
 flask>=3.0.0,<4.0.0
+flask-cors>=4.0.0,<5.0.0
 werkzeug>=3.0.0,<4.0.0
-
 
 # HTTP Client
 requests>=2.32.0,<3.0.0
 
 # Utilities & Logging
-rich==14.0.0
-setuptools==66.1.1
+rich>=14.0.0,<15.0.0
 
+# Numerical & Image Processing
+numpy>=1.24.0,<2.0.0
+opencv-python>=4.8.0,<5.0.0
 
-# Production Server (optional for Docker deployment)
+# Geometry Operations
+shapely>=2.0.0,<3.0.0
+
+# Production Server (optional for Docker)
 gunicorn>=21.0.0,<23.0.0
