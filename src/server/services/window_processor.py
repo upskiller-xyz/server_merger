@@ -101,7 +101,7 @@ class WindowProcessor:
             return cv2.resize(
                 img,
                 (GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX, GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX),
-                interpolation=cv2.INTER_NEAREST_EXACT
+                interpolation=cv2.INTER_NEAREST
             )
 
         df_std, mask_std = self._apply_transformation(df_values, mask, resize_transform)
