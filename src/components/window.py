@@ -91,7 +91,12 @@ class RoomPolygon:
     
     def point_to_zero(self, point:Point2D)->Point2D:
         min_x, min_y, _, max_y = self.get_bounds()
-        return Point2D(point.x-min_x, max_y - point.y)
+        # X: shift to min_x = 0
+        # Y: flip from world coords (Y-up) to image coords (Y-down)
+        # Formula: (height) - (point_y - min_y) = (max_y - min_y) - (point_y - min_y)
+        
+        height = max_y - min_y
+        return Point2D(point.x - min_x, height - (point.y - min_y))
     
     def get_edges(self):
         polygon_coords = self.get_coords()

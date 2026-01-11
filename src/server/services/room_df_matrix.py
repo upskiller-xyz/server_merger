@@ -62,9 +62,6 @@ class RoomDFMatrix:
 
         window_height, window_width = df_window.shape
 
-        # Debug logging to identify None/NaN values
-        self.logger.debug(f"  Translation before int(): x={translation.x}, y={translation.y}, types: x={type(translation.x)}, y={type(translation.y)}")
-
         # Validate translation before converting to int
         if translation.y is None or translation.x is None:
             raise ValueError(
@@ -98,6 +95,18 @@ class RoomDFMatrix:
         self.logger.debug(
             f"  Dest region: [{region.dst_y_start}:{region.dst_y_end}, "
             f"{region.dst_x_start}:{region.dst_x_end}] = {region.dst_height}x{region.dst_width}"
+        )
+        self.logger.debug(
+            f"  Window offsets: offset_x={offset_x}, offset_y={offset_y}"
+        )
+        self.logger.debug(
+            f"  Window size: {window_width}x{window_height}"
+        )
+        self.logger.debug(
+            f"  Reference in simulation would be at row: 64 in original 128x128 image"
+        )
+        self.logger.debug(
+            f"  Reference in room should be at: offset_y + 64 = {offset_y} + 64 = {offset_y + 64}"
         )
 
         # Verify regions match
@@ -153,14 +162,15 @@ class RoomDFMatrix:
         Returns:
             OverlapRegion with source and destination boundaries
         """
+        
         return OverlapRegion(
-            src_y_start=max(AggregationConstants.ZERO_VALUE, -offset_y),
-            src_y_end=min(window_height, self.height_px - offset_y),
-            src_x_start=max(AggregationConstants.ZERO_VALUE, -offset_x),
-            src_x_end=min(window_width, self.width_px - offset_x),
-            dst_y_start=max(AggregationConstants.ZERO_VALUE, offset_y),
+            src_y_start=max(AggregationConstants.ZERO_VALUE, offset_y),
+            src_y_end=min(window_height, self.height_px + offset_y),
+            src_x_start=max(AggregationConstants.ZERO_VALUE, offset_x),
+            src_x_end=min(window_width, self.width_px + offset_x),
+            dst_y_start=max(AggregationConstants.ZERO_VALUE, -offset_y),
             dst_y_end=min(self.height_px, offset_y + window_height),
-            dst_x_start=max(AggregationConstants.ZERO_VALUE, offset_x),
+            dst_x_start=max(AggregationConstants.ZERO_VALUE, -offset_x),
             dst_x_end=min(self.width_px, offset_x + window_width)
         )
 

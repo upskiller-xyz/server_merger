@@ -43,8 +43,8 @@ class ScaleConverter:
             Point in pixels
         """
         return Point2D(
-            np.round(point.x / self.meters_per_pixel),
-            np.round(point.y / self.meters_per_pixel)
+            np.round(point.x / self.meters_per_pixel) ,
+            np.round(point.y / self.meters_per_pixel) 
         )
 
     def pixels_to_meters(self, pixels: int) -> float:

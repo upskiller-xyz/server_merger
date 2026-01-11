@@ -24,6 +24,8 @@ from src.server.enums import ContentType, HTTPStatus, LogLevel
 from src.server.services.logging import StructuredLogger
 from src.server.controllers.base_controller import ServerController
 from src.server.services.df_aggregation import DFAggregationService
+from src.server.services.validation import ValidationError
+from src.server.services.request_validators import DFAggregationRequestValidator
 
 
 class ServerConfig:
@@ -56,6 +58,7 @@ class ServerApplication:
         CORS(self._app)
         self._controller = None
         self._logger = None
+        self._request_validator = DFAggregationRequestValidator()
         self._setup_dependencies()
         self._setup_routes()
 
@@ -150,8 +153,8 @@ class ServerApplication:
 
         Returns:
         {
-            "df_matrix": [[...], [...], ...],
-            "room_mask": [[...], [...], ...]
+            "result": [[...], [...], ...],
+            "mask": [[...], [...], ...]
         }
         """
         try:
@@ -161,15 +164,8 @@ class ServerApplication:
             if not data:
                 raise BadRequest("No JSON data provided")
 
-            # Validate required fields
-            required_fields = [
-                RequestField.ROOM_POLYGON.value,
-                RequestField.WINDOWS.value,
-                RequestField.SIMULATION.value
-            ]
-            for field in required_fields:
-                if field not in data:
-                    raise BadRequest(f"Missing required field: {field}")
+            # Validate request with detailed error messages
+            self._request_validator.validate(data)
 
             # Get DF aggregation service
             df_service = self._controller.get_service(ServiceName.DF_AGGREGATION.value)
@@ -183,11 +179,21 @@ class ServerApplication:
 
             return jsonify(result)
 
+        except ValidationError as e:
+            # Return structured validation error
+            self._logger.warning(f"Validation error: {e.message}")
+            return jsonify(e.to_dict()), HTTPStatus.BAD_REQUEST.value
         except ValueError as e:
+            # Legacy validation errors (should be replaced with ValidationError)
+            self._logger.warning(f"Value error: {str(e)}")
             return jsonify({"error": f"Validation error: {str(e)}"}), HTTPStatus.BAD_REQUEST.value
         except Exception as e:
-            self._logger.error(f"DF aggregation failed: {str(e)}")
-            return jsonify({"error": f"Aggregation failed: {str(e)}"}), HTTPStatus.INTERNAL_SERVER_ERROR.value
+            # Unexpected errors
+            self._logger.error(f"DF aggregation failed: {str(e)}", exc_info=True)
+            return jsonify({
+                "error": f"Internal server error: {str(e)}",
+                "error_code": "internal_error"
+            }), HTTPStatus.INTERNAL_SERVER_ERROR.value
 
     @property
     def app(self) -> Flask:

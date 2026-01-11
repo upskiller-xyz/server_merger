@@ -242,8 +242,8 @@ class DFAggregationService:
                 f"does not match mask shape {mask.shape}. Resizing both to 128x128."
             )
             target_size = (GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX, GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX)
-            df_values = cv2.resize(df_values, target_size, interpolation=cv2.INTER_NEAREST)
-            mask = cv2.resize(mask, target_size, interpolation=cv2.INTER_NEAREST)
+            df_values = cv2.resize(df_values, target_size, interpolation=cv2.INTER_NEAREST_EXACT)
+            mask = cv2.resize(mask, target_size, interpolation=cv2.INTER_NEAREST_EXACT)
 
         # Calculate scale proportionally from image size
         img_size = df_values.shape[0]
