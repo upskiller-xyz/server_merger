@@ -109,28 +109,21 @@ class CalculateWindowPositionStep(ProcessingStep):
         """Calculate window room coordinates and reference point"""
         self.logger.debug(f"Step 1: Calculating window position for '{context.input.window_id}'")
 
-        # Get window reference point on room polygon (meters)
+        # Get window reference point on room polygon (edge midpoint on room wall)
+        # This gives us where the window facade touches the room
         room_coord_meters = context.input.window.reference_from_polygon(context.input.room_polygon)
-
-        # Validate room_coord_meters
-        if room_coord_meters.x is None or room_coord_meters.y is None:
-            raise ValueError(
-                f"Window {context.input.window_id}: reference_from_polygon returned None coordinates: "
-                f"x={room_coord_meters.x}, y={room_coord_meters.y}"
-            )
-
-        # Convert to pixels
+        
+        # Convert to room canvas coordinates
+        # Use point_to_zero which handles the coordinate transformation correctly
         point_shifted = context.input.room_polygon.point_to_zero(room_coord_meters)
-
         # Validate shifted point
         if point_shifted.x is None or point_shifted.y is None:
             raise ValueError(
-                f"Window {context.input.window_id}: point_to_zero returned None coordinates: "
+                f"Window {context.input.window_id}: point calculation returned None coordinates: "
                 f"x={point_shifted.x}, y={point_shifted.y}"
             )
 
         room_coord_pixels = self.scale_converter.point_meters_to_pixels(point_shifted)
-
         # Validate converted pixels
         if room_coord_pixels.x is None or room_coord_pixels.y is None:
             raise ValueError(
@@ -140,16 +133,12 @@ class CalculateWindowPositionStep(ProcessingStep):
 
         # Get window reference point in 128x128 image
         ref_px_original = context.input.window.get_reference_pixel()
-
         # Store position data
         context.position = PositionData(
             room_coord_meters=room_coord_meters,
             room_coord_pixels=room_coord_pixels,
             ref_px_original=ref_px_original
         )
-
-        self.logger.debug(f"  Window room coord: {context.position.room_coord_meters}")
-        self.logger.debug(f"  Window room coord (px): {context.position.room_coord_pixels}")
 
         return context
 
@@ -216,7 +205,6 @@ class CropWindowStep(ProcessingStep):
 
     def run(self, context: WindowProcessingContext) -> WindowProcessingContext:
         """Crop to mask bounds"""
-        self.logger.debug(f"Step 4: Cropping window '{context.input.window_id}'")
         
         df_cropped, mask_cropped, crop_offset = (
             self.window_processor.crop_to_visible_bounds(
@@ -227,8 +215,6 @@ class CropWindowStep(ProcessingStep):
         )
         context.original_images = ImagePair(df_cropped, mask_cropped)
         
-        self.logger.debug(f"  -----cr: {df_cropped.shape}")
-        self.logger.debug(f"  -----: {context.original_images.df_values.shape}")
         context.cropped = CropData(
             images=ImagePair(df_cropped, mask_cropped),
             offset=crop_offset
@@ -259,15 +245,39 @@ class CalculateTranslationStep(ProcessingStep):
         if context.cropped.offset is None or None in context.cropped.offset:
             raise ValueError(f"Crop offset is None or contains None: {context.cropped.offset}")
 
+
+        
+        ref_x_in_crop = self._get_crop(context, axis=0)
+        ref_y_in_crop = self._get_crop(context, axis=1)
+
+
+
+        self.logger.debug("context position {}, {}".format(context.position.room_coord_pixels.x, context.position.room_coord_pixels.y))
+
+        
         context.translation = Point2D(
-            context.position.room_coord_pixels.x - context.position.ref_px_rotated[0] + context.cropped.offset[0],
-            context.position.room_coord_pixels.y - context.position.ref_px_rotated[1] + context.cropped.offset[1]
+            ref_x_in_crop,
+            ref_y_in_crop
         )
 
         self.logger.debug(f"  Translation: {context.translation}")
-        self.logger.debug(f"  -----: {context.original_images.df_values.shape}")
+        
 
         return context
+    
+    def _get_crop(self, context:WindowProcessingContext, axis:int)->int:
+        pt = context.position.room_coord_pixels.x
+        
+        if axis == 1:
+            pt = context.position.room_coord_pixels.y
+        _crop = pt
+        if context.position.ref_px_rotated[axis] > 105:
+            _crop = context.position.ref_px_rotated[axis] - pt
+
+        if context.position.ref_px_rotated[axis] ==64:
+            _crop = 64 - pt
+            
+        return _crop
 
 
 class WindowProcessingPipeline:

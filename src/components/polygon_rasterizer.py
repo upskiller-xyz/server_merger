@@ -31,8 +31,9 @@ class PolygonRasterizer:
         
 
         # Convert polygon coordinates to pixel space
+        # Use np.round() to match ScaleConverter's rounding strategy
         polygon_pixels = np.array(
-            [[int(x / scale), int(y / scale)] for x, y in polygon],
+            [[int(np.round(x / scale)), int(np.round(y / scale))] for x, y in polygon],
             dtype=np.int32
         )
 

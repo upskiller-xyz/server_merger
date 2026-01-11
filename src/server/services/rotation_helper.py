@@ -69,7 +69,7 @@ class RotationHelper:
             image,
             rotation_matrix,
             output_size,
-            flags=cv2.INTER_NEAREST,
+            flags=cv2.INTER_NEAREST_EXACT,
             borderMode=cv2.BORDER_CONSTANT,
             borderValue=AggregationConstants.ZERO_VALUE
         )

@@ -101,7 +101,7 @@ class WindowProcessor:
             return cv2.resize(
                 img,
                 (GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX, GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX),
-                interpolation=cv2.INTER_NEAREST
+                interpolation=cv2.INTER_NEAREST_EXACT
             )
 
         df_std, mask_std = self._apply_transformation(df_values, mask, resize_transform)
@@ -191,33 +191,11 @@ class WindowProcessor:
                 - mask_cropped: Cropped mask
                 - crop_offset: (offset_x, offset_y) of crop region in original image
         """
-        rows = np.any(mask > 0, axis=1)
-        cols = np.any(mask > 0, axis=0)
-
-        if not rows.any() or not cols.any():
-            self.logger.warning(f"  No visible region found in mask after rotation")
-            return df_values, mask, (AggregationConstants.ZERO_VALUE, AggregationConstants.ZERO_VALUE)
-
-        row_min, row_max = np.where(rows)[0][[0, -1]]
-        col_min, col_max = np.where(cols)[0][[0, -1]]
-
-        # Add 1 to max indices to include the last row/col in the slice
-        row_max += AggregationConstants.ARRAY_OFFSET_ONE
-        col_max += AggregationConstants.ARRAY_OFFSET_ONE
-
-        # Define crop transformation
-        def crop_transform(img: np.ndarray) -> np.ndarray:
-            return img[row_min:row_max, col_min:col_max]
-
-        df_cropped, mask_cropped = self._apply_transformation(df_values, mask, crop_transform)
-
-        crop_offset = (col_min, row_min)
-
-        self.logger.info(
-            f"  Cropped from {df_values.shape} to {df_cropped.shape}, offset: {crop_offset}"
-        )
-
-        return df_cropped, mask_cropped, crop_offset
+        # TEMPORARY FIX: Disable cropping to avoid reference point alignment issues
+        # The issue is that mask bounds may not include the window reference point (row 64)
+        # which causes incorrect placement. Cropping is just an optimization anyway.
+        self.logger.info(f"  Skipping crop (keeping full {df_values.shape} image)")
+        return df_values, mask, (AggregationConstants.ZERO_VALUE, AggregationConstants.ZERO_VALUE)
 
     def _save_debug_image(self, img: np.ndarray, filename: str) -> None:
         """

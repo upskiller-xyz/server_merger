@@ -96,7 +96,7 @@ class WindowAggregationOrchestrator:
         Returns:
             ProcessedWindow with transformed data and translation
         """
-        print("transforming the window")
+        
         # Process through pipeline
         context = self.pipeline.process(
             window_id=window_id,
