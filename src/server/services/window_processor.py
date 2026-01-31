@@ -191,11 +191,43 @@ class WindowProcessor:
                 - mask_cropped: Cropped mask
                 - crop_offset: (offset_x, offset_y) of crop region in original image
         """
-        # TEMPORARY FIX: Disable cropping to avoid reference point alignment issues
-        # The issue is that mask bounds may not include the window reference point (row 64)
-        # which causes incorrect placement. Cropping is just an optimization anyway.
-        self.logger.info(f"  Skipping crop (keeping full {df_values.shape} image)")
-        return df_values, mask, (AggregationConstants.ZERO_VALUE, AggregationConstants.ZERO_VALUE)
+        self.logger.info(f"  Cropping window '{window_id}' to visible bounds")
+
+        # Find non-zero mask pixels
+        nonzero_coords = np.nonzero(mask)
+
+        if len(nonzero_coords[0]) == 0:
+            # No visible pixels - return empty crop with zero offset
+            self.logger.warning(f"  No visible pixels found in mask for '{window_id}'")
+            return df_values, mask, (AggregationConstants.ZERO_VALUE, AggregationConstants.ZERO_VALUE)
+
+        # Get bounding box of non-zero mask region
+        y_min = np.min(nonzero_coords[0])
+        y_max = np.max(nonzero_coords[0])
+        x_min = np.min(nonzero_coords[1])
+        x_max = np.max(nonzero_coords[1])
+
+        self.logger.debug(f"  Visible bounds: x=[{x_min}, {x_max}], y=[{y_min}, {y_max}]")
+
+        # Crop both arrays to bounding box (inclusive of max indices)
+        df_cropped = df_values[y_min:y_max + 1, x_min:x_max + 1]
+        mask_cropped = mask[y_min:y_max + 1, x_min:x_max + 1]
+
+        # Store crop offset (top-left corner position in original image)
+        crop_offset = (x_min, y_min)
+
+        self.logger.info(
+            f"  Cropped from {df_values.shape} to {df_cropped.shape}, "
+            f"offset: {crop_offset}"
+        )
+        self.logger.debug(
+            f"  After crop - DF range: [{df_cropped.min():.4f}, {df_cropped.max():.4f}]"
+        )
+        self.logger.debug(
+            f"  After crop - Non-zero mask pixels: {np.count_nonzero(mask_cropped)}"
+        )
+
+        return df_cropped, mask_cropped, crop_offset
 
     def _save_debug_image(self, img: np.ndarray, filename: str) -> None:
         """
