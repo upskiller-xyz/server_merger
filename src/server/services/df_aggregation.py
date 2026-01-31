@@ -90,8 +90,8 @@ class RoomDFAggregator:
         room_width_px = int(np.ceil(room_original.width / self.output_scale))
         room_height_px = int(np.ceil(room_original.height / self.output_scale))
 
-        # Initialize room DF matrix
-        df_matrix_container = RoomDFMatrix(room_width_px, room_height_px)
+        # Initialize room DF matrix with debug directory
+        df_matrix_container = RoomDFMatrix(room_width_px, room_height_px, self.debug_dir)
 
         # Create room mask
         room_mask = self._create_room_mask(room_translated, room_width_px, room_height_px)

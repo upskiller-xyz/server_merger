@@ -9,8 +9,11 @@ on a shared context object.
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Tuple, Optional
+from pathlib import Path
 import numpy as np
 import logging
+import cv2
+import os
 
 from src.components.geometry_ops import Point2D
 from src.components.window import WindowGeometry, RoomPolygon
@@ -75,14 +78,16 @@ class ProcessingStep(ABC):
     Each step implements the run() method which operates on the context.
     """
 
-    def __init__(self, logger: logging.Logger):
+    def __init__(self, logger: logging.Logger, debug_dir: Optional[Path] = None):
         """
         Initialize step with logger.
 
         Args:
             logger: Logger instance for step logging
+            debug_dir: Optional debug directory for saving intermediate images
         """
         self.logger = logger
+        self.debug_dir = debug_dir
 
     @abstractmethod
     def run(self, context: WindowProcessingContext) -> WindowProcessingContext:
@@ -97,12 +102,44 @@ class ProcessingStep(ABC):
         """
         pass
 
+    def _save_debug_image(self, img: np.ndarray, window_id: str, step_name: str, image_type: str) -> None:
+        """
+        Save debug image for intermediate processing steps.
+        Only saves if DEBUG_SAVE_STEPS environment variable is set to 'true' or '1'.
+
+        Args:
+            img: Image array to save
+            window_id: Window identifier
+            step_name: Name of the processing step
+            image_type: Type of image (df or mask)
+        """
+        # Check if debug saving is enabled via environment variable
+        debug_enabled = os.getenv('DEBUG_SAVE_STEPS', '').lower() in ('true', '1', 'yes')
+
+        if not debug_enabled or self.debug_dir is None:
+            return
+
+        try:
+            filename = f"{window_id}_{step_name}_{image_type}.png"
+            output_path = self.debug_dir / filename
+
+            # Normalize to 0-255 range for visualization
+            if img.max() > 0:
+                img_normalized = (img / img.max() * 255).astype(np.uint8)
+            else:
+                img_normalized = img.astype(np.uint8)
+
+            cv2.imwrite(str(output_path), img_normalized)
+            self.logger.debug(f"  [DEBUG] Saved {step_name} {image_type}: {output_path}")
+        except Exception as e:
+            self.logger.warning(f"  Failed to save debug image {filename}: {e}")
+
 
 class CalculateWindowPositionStep(ProcessingStep):
     """Calculate window position in room coordinates (meters and pixels)"""
 
-    def __init__(self, scale_converter: ScaleConverter, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, scale_converter: ScaleConverter, logger: logging.Logger, debug_dir: Optional[Path] = None):
+        super().__init__(logger, debug_dir)
         self.scale_converter = scale_converter
 
     def run(self, context: WindowProcessingContext) -> WindowProcessingContext:
@@ -112,7 +149,7 @@ class CalculateWindowPositionStep(ProcessingStep):
         # Get window reference point on room polygon (edge midpoint on room wall)
         # This gives us where the window facade touches the room
         room_coord_meters = context.input.window.reference_from_polygon(context.input.room_polygon)
-        
+
         # Convert to room canvas coordinates
         # Use point_to_zero which handles the coordinate transformation correctly
         point_shifted = context.input.room_polygon.point_to_zero(room_coord_meters)
@@ -140,14 +177,18 @@ class CalculateWindowPositionStep(ProcessingStep):
             ref_px_original=ref_px_original
         )
 
+        # TODO: TEMPORARY - Save original images (will be removed after debugging)
+        self._save_debug_image(context.original_images.df_values, context.input.window_id, "01_original", "df")
+        self._save_debug_image(context.original_images.mask, context.input.window_id, "01_original", "mask")
+
         return context
 
 
 class StandardizeWindowStep(ProcessingStep):
     """Standardize window images to 128x128 at 0.1m/px"""
 
-    def __init__(self, window_processor: WindowProcessor, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, window_processor: WindowProcessor, logger: logging.Logger, debug_dir: Optional[Path] = None):
+        super().__init__(logger, debug_dir)
         self.window_processor = window_processor
 
     def run(self, context: WindowProcessingContext) -> WindowProcessingContext:
@@ -162,14 +203,18 @@ class StandardizeWindowStep(ProcessingStep):
 
         context.original_images = ImagePair(df_std, mask_std)
 
+        # TODO: TEMPORARY - Save standardized images (will be removed after debugging)
+        self._save_debug_image(context.original_images.df_values, context.input.window_id, "02_standardized", "df")
+        self._save_debug_image(context.original_images.mask, context.input.window_id, "02_standardized", "mask")
+
         return context
 
 
 class RotateWindowStep(ProcessingStep):
     """Rotate window images and reference point by direction angle"""
 
-    def __init__(self, window_processor: WindowProcessor, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, window_processor: WindowProcessor, logger: logging.Logger, debug_dir: Optional[Path] = None):
+        super().__init__(logger, debug_dir)
         self.window_processor = window_processor
 
     def run(self, context: WindowProcessingContext) -> WindowProcessingContext:
@@ -191,7 +236,10 @@ class RotateWindowStep(ProcessingStep):
 
         context.original_images = ImagePair(df_rotated, mask_rotated)
         context.position.ref_px_rotated = ref_px_rotated
-        
+
+        # TODO: TEMPORARY - Save rotated images (will be removed after debugging)
+        self._save_debug_image(context.original_images.df_values, context.input.window_id, "03_rotated", "df")
+        self._save_debug_image(context.original_images.mask, context.input.window_id, "03_rotated", "mask")
 
         return context
 
@@ -199,13 +247,13 @@ class RotateWindowStep(ProcessingStep):
 class CropWindowStep(ProcessingStep):
     """Crop window images to visible (non-zero mask) bounds"""
 
-    def __init__(self, window_processor: WindowProcessor, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, window_processor: WindowProcessor, logger: logging.Logger, debug_dir: Optional[Path] = None):
+        super().__init__(logger, debug_dir)
         self.window_processor = window_processor
 
     def run(self, context: WindowProcessingContext) -> WindowProcessingContext:
         """Crop to mask bounds"""
-        
+
         df_cropped, mask_cropped, crop_offset = (
             self.window_processor.crop_to_visible_bounds(
                 context.original_images.df_values,
@@ -214,19 +262,24 @@ class CropWindowStep(ProcessingStep):
             )
         )
         context.original_images = ImagePair(df_cropped, mask_cropped)
-        
+
         context.cropped = CropData(
             images=ImagePair(df_cropped, mask_cropped),
             offset=crop_offset
         )
+
+        # TODO: TEMPORARY - Save cropped images (will be removed after debugging)
+        self._save_debug_image(context.original_images.df_values, context.input.window_id, "04_cropped", "df")
+        self._save_debug_image(context.original_images.mask, context.input.window_id, "04_cropped", "mask")
+
         return context
 
 
 class CalculateTranslationStep(ProcessingStep):
     """Calculate final translation offset for placing window on room canvas"""
 
-    def __init__(self, logger: logging.Logger):
-        super().__init__(logger)
+    def __init__(self, logger: logging.Logger, debug_dir: Optional[Path] = None):
+        super().__init__(logger, debug_dir)
 
     def run(self, context: WindowProcessingContext) -> WindowProcessingContext:
         """Calculate translation vector"""
@@ -304,12 +357,14 @@ class WindowProcessingPipeline:
         self.logger = logger
 
         # Create processing steps in order
+        # Pass window_processor.debug_dir to enable debug image saving
+        debug_dir = window_processor.debug_dir if hasattr(window_processor, 'debug_dir') else None
         self.steps = [
-            CalculateWindowPositionStep(scale_converter, logger),
-            StandardizeWindowStep(window_processor, logger),
-            RotateWindowStep(window_processor, logger),
-            CropWindowStep(window_processor, logger),
-            CalculateTranslationStep(logger)
+            CalculateWindowPositionStep(scale_converter, logger, debug_dir),
+            StandardizeWindowStep(window_processor, logger, debug_dir),
+            RotateWindowStep(window_processor, logger, debug_dir),
+            CropWindowStep(window_processor, logger, debug_dir),
+            CalculateTranslationStep(logger, debug_dir)
         ]
 
     def process(

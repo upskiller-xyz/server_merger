@@ -20,20 +20,21 @@ class PolygonRasterizer:
         Convert polygon to binary mask.
 
         Args:
-            polygon: List of [x, y] coordinates in meters
+            polygon: List of [x, y] coordinates in meters (origin at bottom-left)
             width: Output width in pixels
             height: Output height in pixels
             scale: Meters per pixel
 
         Returns:
-            Binary mask (height x width)
+            Binary mask (height x width) with origin at top-left (image coordinates)
         """
-        
 
         # Convert polygon coordinates to pixel space
         # Use np.round() to match ScaleConverter's rounding strategy
+        # Flip Y-axis: our coordinate system has origin at bottom-left,
+        # but image coordinates have origin at top-left
         polygon_pixels = np.array(
-            [[int(np.round(x / scale)), int(np.round(y / scale))] for x, y in polygon],
+            [[int(np.round(x / scale)), int(np.round((height - 1) - (y / scale)))] for x, y in polygon],
             dtype=np.int32
         )
 

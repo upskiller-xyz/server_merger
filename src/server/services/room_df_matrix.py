@@ -4,14 +4,17 @@ Room DF Matrix Management
 This module provides the RoomDFMatrix class for managing the room daylight factor matrix.
 """
 
-from typing import Tuple
+from typing import Tuple, Optional
+from pathlib import Path
 import numpy as np
 import logging
+import cv2
+import os
 
 from src.components.enums import AggregationConstants
 from src.components.geometry_ops import Point2D
 from src.server.services.df_aggregation_models import OverlapRegion
-
+logger = logging.Logger("logger")
 
 class RoomDFMatrix:
     """
@@ -19,19 +22,22 @@ class RoomDFMatrix:
     Handles accumulation of window contributions.
     """
 
-    def __init__(self, width_px: int, height_px: int):
+    def __init__(self, width_px: int, height_px: int, debug_dir: Optional[Path] = None):
         """
         Initialize room DF matrix.
 
         Args:
             width_px: Width of room in pixels
             height_px: Height of room in pixels
+            debug_dir: Optional debug directory for saving intermediate images
         """
         self.df_matrix = np.zeros((height_px, width_px), dtype=np.float32)
         self.room_mask = None
         self.width_px = width_px
         self.height_px = height_px
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.debug_dir = debug_dir
+        self.window_count = 0
 
     def set_mask(self, mask: np.ndarray) -> None:
         """Set the room mask."""
@@ -41,6 +47,9 @@ class RoomDFMatrix:
                 f"({self.height_px}, {self.width_px})"
             )
         self.room_mask = mask
+
+        # TODO: TEMPORARY - Save room mask (will be removed after debugging)
+        self._save_debug_image(mask, "room_00_mask")
 
     def accumulate_window(
         self,
@@ -140,6 +149,10 @@ class RoomDFMatrix:
                 region.dst_y_start:region.dst_y_end,
                 region.dst_x_start:region.dst_x_end
             ] += masked_values
+
+            # TODO: TEMPORARY - Save intermediate aggregation state (will be removed after debugging)
+            self.window_count += 1
+            self._save_debug_image(self.df_matrix, f"room_{self.window_count:02d}_after_{window_id}")
         else:
             self.logger.warning(f"  No valid overlap region (size: {region.src_height}x{region.src_width})")
 
@@ -164,10 +177,10 @@ class RoomDFMatrix:
         """
         
         return OverlapRegion(
-            src_y_start=max(AggregationConstants.ZERO_VALUE, offset_y),
-            src_y_end=min(window_height, self.height_px + offset_y),
-            src_x_start=max(AggregationConstants.ZERO_VALUE, offset_x),
-            src_x_end=min(window_width, self.width_px + offset_x),
+            src_y_start=AggregationConstants.ZERO_VALUE,
+            src_y_end=min(window_height-1, self.height_px + offset_y),
+            src_x_start=AggregationConstants.ZERO_VALUE,
+            src_x_end=min(window_width-1, self.width_px + offset_x),
             dst_y_start=max(AggregationConstants.ZERO_VALUE, -offset_y),
             dst_y_end=min(self.height_px, offset_y + window_height),
             dst_x_start=max(AggregationConstants.ZERO_VALUE, -offset_x),
@@ -180,8 +193,15 @@ class RoomDFMatrix:
         if self.room_mask is not None:
             self.logger.info(np.unique(self.df_matrix))
             self.logger.info(np.unique(self.room_mask))
+
+            # TODO: TEMPORARY - Save before masking (will be removed after debugging)
+            self._save_debug_image(self.df_matrix, "room_99_before_mask")
+
             self.df_matrix *= self.room_mask
             self.logger.info("multiplication succeeded")
+
+            # TODO: TEMPORARY - Save after masking (will be removed after debugging)
+            self._save_debug_image(self.df_matrix, "room_final_result")
 
     def get_result(self) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -191,3 +211,32 @@ class RoomDFMatrix:
             (df_matrix, room_mask): Final aggregated result
         """
         return self.df_matrix, self.room_mask
+
+    def _save_debug_image(self, img: np.ndarray, filename: str) -> None:
+        """
+        Save debug image for aggregation steps.
+        Only saves if DEBUG_SAVE_STEPS environment variable is set to 'true' or '1'.
+
+        Args:
+            img: Image array to save
+            filename: Base filename (without extension)
+        """
+        # Check if debug saving is enabled via environment variable
+        debug_enabled = os.getenv('DEBUG_SAVE_STEPS', '').lower() in ('true', '1', 'yes')
+
+        if not debug_enabled or self.debug_dir is None:
+            return
+
+        try:
+            output_path = self.debug_dir / f"{filename}.png"
+
+            # Normalize to 0-255 range for visualization
+            if img.max() > 0:
+                img_normalized = (img / img.max() * 255).astype(np.uint8)
+            else:
+                img_normalized = img.astype(np.uint8)
+
+            cv2.imwrite(str(output_path), img_normalized)
+            self.logger.debug(f"  [DEBUG] Saved aggregation image: {output_path}")
+        except Exception as e:
+            self.logger.warning(f"  Failed to save debug image {filename}: {e}")
