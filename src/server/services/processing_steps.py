@@ -221,8 +221,9 @@ class RotateWindowStep(ProcessingStep):
         """Apply rotation transformation"""
         self.logger.debug(f"Step 3: Rotating window '{context.input.window_id}'")
 
-        # Handle None direction_angle (default to 0)
-        rotation_angle = -context.input.window.direction_angle if context.input.window.direction_angle is not None else 0
+        # Reverse the encoder's rotation: encoder rotated by -direction_angle to align
+        # window normal with +X, so we rotate by +direction_angle to restore original orientation
+        rotation_angle = context.input.window.direction_angle if context.input.window.direction_angle is not None else 0
 
         df_rotated, mask_rotated, ref_px_rotated = (
             self.window_processor.rotate_window_images(
