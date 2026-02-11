@@ -3,17 +3,14 @@ Daylight Factor Aggregation Service
 
 This module provides the main aggregation service for combining daylight factor (DF)
 simulation results from multiple windows into a single room polygon representation.
-
 """
 
 from typing import Dict, List, Tuple
-from pathlib import Path
 import numpy as np
 import cv2
 import logging
 
 from src.components.enums import AggregationConstants, ParameterName
-from src.components.geometry_ops import Point2D
 from src.components.graphics_constants import GRAPHICS_CONSTANTS
 from src.components.polygon_rasterizer import PolygonRasterizer
 from src.components.window import RoomPolygon, WindowGeometry
@@ -34,7 +31,6 @@ class RoomDFAggregator:
     def __init__(
         self,
         output_scale: float = AggregationConstants.DEFAULT_OUTPUT_SCALE,
-        debug_dir: str = AggregationConstants.DEFAULT_DEBUG_DIR,
         orchestrator: WindowAggregationOrchestrator = None
     ):
         """
@@ -42,18 +38,14 @@ class RoomDFAggregator:
 
         Args:
             output_scale: Output scale in meters per pixel (default: 0.1m/px)
-            debug_dir: Directory to save debug images
             orchestrator: Optional orchestrator (will create default if not provided)
         """
         self.output_scale = output_scale
         self.polygon_rasterizer = PolygonRasterizer()
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.debug_dir = Path(debug_dir)
-        self.debug_dir.mkdir(parents=True, exist_ok=True)
 
-        # Initialize orchestrator via dependency injection
         if orchestrator is None:
-            window_processor = WindowProcessor(self.debug_dir, self.logger)
+            window_processor = WindowProcessor(self.logger)
             self.orchestrator = WindowAggregationOrchestrator(
                 window_processor, self.output_scale, self.logger
             )
@@ -83,35 +75,30 @@ class RoomDFAggregator:
                 - df_matrix: 2D array of aggregated DF values
                 - room_mask: Binary mask of room polygon
         """
-        # Step 1: Calculate room bounds and create room image
         room_original = room_polygon
         room_translated = room_original.shift_to_zero()
 
         room_width_px = int(np.ceil(room_original.width / self.output_scale))
         room_height_px = int(np.ceil(room_original.height / self.output_scale))
 
-        # Initialize room DF matrix with debug directory
-        df_matrix_container = RoomDFMatrix(room_width_px, room_height_px, self.debug_dir)
+        df_matrix_container = RoomDFMatrix(room_width_px, room_height_px)
 
         # Create room mask in image coords (Y-down).
         # PolygonRasterizer already flips Y internally, matching point_to_zero() convention.
         room_mask = self._create_room_mask(room_translated, room_width_px, room_height_px)
         df_matrix_container.set_mask(room_mask)
 
-        # Step 2-3: Process each window and accumulate (using orchestrator)
-        list(map(
-            lambda item: self.orchestrator.process_and_accumulate_window(
-                item[0], item[1], room_original, df_matrix_container
-            ),
-            simulations.items()
-        ))
-        self.logger.info("windows processed")
-        # Step 4: Apply room mask to final result
+        for window_id, sim_data in simulations.items():
+            self.orchestrator.process_and_accumulate_window(
+                window_id, sim_data, room_original, df_matrix_container
+            )
+
+        self.logger.info(f"All {len(simulations)} windows processed")
+
         df_matrix_container.apply_mask()
-        self.logger.info("Mask applied")
 
         # Convert from internal Y-down image coords to Y-up world coords for frontend.
-        # Frontend maps row 0 → minY (Y-up convention), so we flip the output.
+        # Frontend maps row 0 -> minY (Y-up convention), so we flip the output.
         df_matrix, room_mask = df_matrix_container.get_result()
         return np.flipud(df_matrix), np.flipud(room_mask)
 
@@ -173,16 +160,12 @@ class DFAggregationService:
         Returns:
             Dictionary containing result and mask as lists
         """
-        # Parse and create simulation data objects
         sim_objects = self._create_simulation_objects(windows_data, simulations)
-
-        # Create RoomPolygon from coordinates
         room_poly = RoomPolygon([(x[0], x[1]) for x in room_polygon])
 
-        # Aggregate
         df_matrix, room_mask = self.aggregator.aggregate(room_poly, sim_objects)
-        self.logger.info("Aggregation happened")
-        # Convert to lists for JSON serialization
+        self.logger.info("Aggregation complete")
+
         return {
             'result': df_matrix.tolist(),
             'mask': room_mask.tolist()
@@ -239,11 +222,9 @@ class DFAggregationService:
             direction_angle=window_dict[ParameterName.DIRECTION_ANGLE.value]
         )
 
-        # Parse simulation arrays (keys from API request)
         df_values = np.array(sim_dict['df_values'], dtype=np.float32)
         mask = np.array(sim_dict['mask'], dtype=np.uint8)
 
-        # Resize both to 128x128 if shapes don't match
         if df_values.shape != mask.shape:
             self.logger.warning(
                 f"Window {window_id}: df_values shape {df_values.shape} "
@@ -253,7 +234,6 @@ class DFAggregationService:
             df_values = cv2.resize(df_values, target_size, interpolation=cv2.INTER_NEAREST)
             mask = cv2.resize(mask, target_size, interpolation=cv2.INTER_NEAREST)
 
-        # Calculate scale proportionally from image size
         img_size = df_values.shape[0]
         scale = ImageScale.from_image_size(img_size)
 

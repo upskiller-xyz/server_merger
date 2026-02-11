@@ -35,7 +35,6 @@ class WindowAggregationOrchestrator:
         """
         self.logger = logger
 
-        # Create processing pipeline
         self.pipeline = WindowProcessingPipeline(
             window_processor=window_processor,
             scale_converter=ScaleConverter(output_scale),
@@ -52,7 +51,7 @@ class WindowAggregationOrchestrator:
         """
         Process a single window through the transformation pipeline and accumulate.
 
-        Pipeline: window → standardize → rotate → crop → translate → accumulate
+        Pipeline: window -> standardize -> rotate -> crop -> translate -> accumulate
 
         Args:
             window_id: Window identifier
@@ -63,18 +62,15 @@ class WindowAggregationOrchestrator:
         self.logger.info(f"Processing window '{window_id}'")
         self._log_window_metadata(sim_data.window)
 
-        # Transform window through pipeline
         processed_window = self._transform_window_through_pipeline(
             window_id, sim_data, room_original
         )
 
-        # Accumulate to room matrix
         df_matrix_container.accumulate_window(
             processed_window.df_cropped,
             processed_window.mask_cropped,
             processed_window.translation,
-            window_id,
-            processed_window.room_coord_pixels
+            window_id
         )
 
     def _transform_window_through_pipeline(
@@ -86,9 +82,6 @@ class WindowAggregationOrchestrator:
         """
         Transform window through the processing pipeline.
 
-        Uses Chain of Responsibility pattern where each step operates on
-        a shared context object.
-
         Args:
             window_id: Window identifier
             sim_data: Simulation data
@@ -97,8 +90,6 @@ class WindowAggregationOrchestrator:
         Returns:
             ProcessedWindow with transformed data and translation
         """
-        
-        # Process through pipeline
         context = self.pipeline.process(
             window_id=window_id,
             window=sim_data.window,
@@ -106,13 +97,11 @@ class WindowAggregationOrchestrator:
             mask=sim_data.mask,
             room_polygon=room_original
         )
-        
-        # Return as ProcessedWindow
+
         return ProcessedWindow(
             df_cropped=context.original_images.df_values,
             mask_cropped=context.original_images.mask,
-            translation=context.translation,
-            room_coord_pixels=context.position.room_coord_pixels
+            translation=context.translation
         )
 
     def _log_window_metadata(self, window: WindowGeometry) -> None:
@@ -124,5 +113,5 @@ class WindowAggregationOrchestrator:
         if window.direction_angle:
             self.logger.debug(
                 f"  Window direction: {window.direction_angle:.4f} rad "
-                f"({np.degrees(window.direction_angle):.2f}°)"
+                f"({np.degrees(window.direction_angle):.2f}deg)"
             )

@@ -7,7 +7,6 @@ This module contains data classes used for DF aggregation.
 from dataclasses import dataclass
 import numpy as np
 
-from src.components.enums import AggregationConstants
 from src.components.graphics_constants import GRAPHICS_CONSTANTS
 from src.components.window import WindowGeometry
 
@@ -93,4 +92,3 @@ class ProcessedWindow:
     df_cropped: np.ndarray
     mask_cropped: np.ndarray
     translation: 'Point2D'
-    room_coord_pixels: 'Point2D' = None

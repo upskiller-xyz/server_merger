@@ -5,7 +5,6 @@ This module provides the WindowProcessor class for processing individual window 
 """
 
 from typing import Tuple, Callable
-from pathlib import Path
 import cv2
 import numpy as np
 import logging
@@ -21,15 +20,13 @@ class WindowProcessor:
     Handles standardization, rotation, and cropping.
     """
 
-    def __init__(self, debug_dir: Path, logger: logging.Logger):
+    def __init__(self, logger: logging.Logger):
         """
         Initialize window processor.
 
         Args:
-            debug_dir: Directory for debug images
             logger: Logger instance
         """
-        self.debug_dir = debug_dir
         self.logger = logger
         self.rotation_helper = RotationHelper()
 
@@ -79,9 +76,6 @@ class WindowProcessor:
             f"  Input DF shape: {df_values.shape}, "
             f"range: [{df_values.min():.4f}, {df_values.max():.4f}]"
         )
-        self.logger.debug(
-            f"  Input mask shape: {mask.shape}, unique values: {np.unique(mask)}"
-        )
 
         if current_size == GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX:
             self.logger.debug(
@@ -96,7 +90,6 @@ class WindowProcessor:
             f"{GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX}x{GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX}"
         )
 
-        # Define resize transformation
         def resize_transform(img: np.ndarray) -> np.ndarray:
             return cv2.resize(
                 img,
@@ -104,12 +97,7 @@ class WindowProcessor:
                 interpolation=cv2.INTER_NEAREST
             )
 
-        df_std, mask_std = self._apply_transformation(df_values, mask, resize_transform)
-
-        self.logger.debug(f"  After resize - DF range: [{df_std.min():.4f}, {df_std.max():.4f}]")
-        self.logger.debug(f"  After resize - Mask unique: {np.unique(mask_std)}")
-
-        return df_std, mask_std
+        return self._apply_transformation(df_values, mask, resize_transform)
 
     def rotate_window_images(
         self,
@@ -133,7 +121,7 @@ class WindowProcessor:
             (df_rotated, mask_rotated, ref_rotated): Rotated images and rotated reference point
         """
         angle_deg = np.degrees(direction_angle)
-        self.logger.info(f"  Rotating by {direction_angle:.4f} rad ({angle_deg:.2f}°)")
+        self.logger.info(f"  Rotating by {direction_angle:.4f} rad ({angle_deg:.2f}deg)")
 
         center = (
             df_values.shape[1] * 0.5,
@@ -141,9 +129,7 @@ class WindowProcessor:
         )
 
         rotation_matrix = self.rotation_helper.get_rotation_matrix(angle_deg, center)
-        self.logger.debug(f"  Rotation center: {center}")
 
-        # Define rotation transformations
         def rotate_df_transform(img: np.ndarray) -> np.ndarray:
             return self.rotation_helper.rotate_image(
                 img, rotation_matrix, (img.shape[1], img.shape[0])
@@ -157,17 +143,10 @@ class WindowProcessor:
         df_rotated, mask_rotated = self._apply_transformation(
             df_values, mask, rotate_df_transform, rotate_mask_transform
         )
-        # Rotate the reference point
+
         ref_rotated = self.rotation_helper.rotate_point(window_ref_px, rotation_matrix)
 
-        self.logger.debug(
-            f"  After rotation - DF range: [{df_rotated.min():.4f}, {df_rotated.max():.4f}]"
-        )
-        self.logger.debug(f"  After rotation - Mask unique: {np.unique(mask_rotated)}")
-        self.logger.debug(
-            f"  After rotation - Non-zero mask pixels: {np.count_nonzero(mask_rotated)}"
-        )
-        self.logger.debug(f"  After rotation - Reference point: {window_ref_px} → {ref_rotated}")
+        self.logger.debug(f"  Reference point: {window_ref_px} -> {ref_rotated}")
 
         return df_rotated, mask_rotated, ref_rotated
 
@@ -191,62 +170,24 @@ class WindowProcessor:
                 - mask_cropped: Cropped mask
                 - crop_offset: (offset_x, offset_y) of crop region in original image
         """
-        self.logger.info(f"  Cropping window '{window_id}' to visible bounds")
-
-        # Find non-zero mask pixels
         nonzero_coords = np.nonzero(mask)
 
         if len(nonzero_coords[0]) == 0:
-            # No visible pixels - return empty crop with zero offset
             self.logger.warning(f"  No visible pixels found in mask for '{window_id}'")
             return df_values, mask, (AggregationConstants.ZERO_VALUE, AggregationConstants.ZERO_VALUE)
 
-        # Get bounding box of non-zero mask region
         y_min = np.min(nonzero_coords[0])
         y_max = np.max(nonzero_coords[0])
         x_min = np.min(nonzero_coords[1])
         x_max = np.max(nonzero_coords[1])
 
-        self.logger.debug(f"  Visible bounds: x=[{x_min}, {x_max}], y=[{y_min}, {y_max}]")
-
-        # Crop both arrays to bounding box (inclusive of max indices)
         df_cropped = df_values[y_min:y_max + 1, x_min:x_max + 1]
         mask_cropped = mask[y_min:y_max + 1, x_min:x_max + 1]
-
-        # Store crop offset (top-left corner position in original image)
         crop_offset = (x_min, y_min)
 
         self.logger.info(
-            f"  Cropped from {df_values.shape} to {df_cropped.shape}, "
+            f"  Cropped '{window_id}' from {df_values.shape} to {df_cropped.shape}, "
             f"offset: {crop_offset}"
-        )
-        self.logger.debug(
-            f"  After crop - DF range: [{df_cropped.min():.4f}, {df_cropped.max():.4f}]"
-        )
-        self.logger.debug(
-            f"  After crop - Non-zero mask pixels: {np.count_nonzero(mask_cropped)}"
         )
 
         return df_cropped, mask_cropped, crop_offset
-
-    def _save_debug_image(self, img: np.ndarray, filename: str) -> None:
-        """
-        Save debug image to tmp folder.
-
-        Args:
-            img: Image array (will be normalized to 0-255 for saving)
-            filename: Output filename
-        """
-        try:
-            output_path = self.debug_dir / filename
-
-            # Normalize to 0-255 range for visualization
-            if img.max() > AggregationConstants.ZERO_VALUE:
-                img_normalized = (img / img.max() * AggregationConstants.GRAYSCALE_MAX).astype(np.uint8)
-            else:
-                img_normalized = img.astype(np.uint8)
-
-            cv2.imwrite(str(output_path), img_normalized)
-            self.logger.debug(f"  Saved debug image: {output_path}")
-        except Exception as e:
-            self.logger.warning(f"  Failed to save debug image {filename}: {e}")
