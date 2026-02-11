@@ -102,9 +102,12 @@ class ProcessingStep(ABC):
         """
         pass
 
-    def _save_debug_image(self, img: np.ndarray, window_id: str, step_name: str, image_type: str) -> None:
+    def _save_debug_image(
+        self, img: np.ndarray, window_id: str, step_name: str, image_type: str,
+        ref_point: Optional[Tuple[int, int]] = None
+    ) -> None:
         """
-        Save debug image for intermediate processing steps.
+        Save debug image with optional reference point marker.
         Only saves if DEBUG_SAVE_STEPS environment variable is set to 'true' or '1'.
 
         Args:
@@ -112,8 +115,8 @@ class ProcessingStep(ABC):
             window_id: Window identifier
             step_name: Name of the processing step
             image_type: Type of image (df or mask)
+            ref_point: Optional (x, y) reference point to draw as red crosshair
         """
-        # Check if debug saving is enabled via environment variable
         debug_enabled = os.getenv('DEBUG_SAVE_STEPS', '').lower() in ('true', '1', 'yes')
 
         if not debug_enabled or self.debug_dir is None:
@@ -129,7 +132,16 @@ class ProcessingStep(ABC):
             else:
                 img_normalized = img.astype(np.uint8)
 
-            cv2.imwrite(str(output_path), img_normalized)
+            # Convert to color and draw reference point if provided
+            if ref_point is not None:
+                img_color = cv2.cvtColor(img_normalized, cv2.COLOR_GRAY2BGR)
+                x, y = int(ref_point[0]), int(ref_point[1])
+                cv2.drawMarker(img_color, (x, y), (0, 0, 255), cv2.MARKER_CROSS, 10, 1)
+                cv2.circle(img_color, (x, y), 3, (0, 0, 255), -1)
+                cv2.imwrite(str(output_path), img_color)
+            else:
+                cv2.imwrite(str(output_path), img_normalized)
+
             self.logger.debug(f"  [DEBUG] Saved {step_name} {image_type}: {output_path}")
         except Exception as e:
             self.logger.warning(f"  Failed to save debug image {filename}: {e}")
@@ -177,9 +189,8 @@ class CalculateWindowPositionStep(ProcessingStep):
             ref_px_original=ref_px_original
         )
 
-        # TODO: TEMPORARY - Save original images (will be removed after debugging)
-        self._save_debug_image(context.original_images.df_values, context.input.window_id, "01_original", "df")
-        self._save_debug_image(context.original_images.mask, context.input.window_id, "01_original", "mask")
+        self._save_debug_image(context.original_images.df_values, context.input.window_id, "01_original", "df", ref_px_original)
+        self._save_debug_image(context.original_images.mask, context.input.window_id, "01_original", "mask", ref_px_original)
 
         return context
 
@@ -203,9 +214,8 @@ class StandardizeWindowStep(ProcessingStep):
 
         context.original_images = ImagePair(df_std, mask_std)
 
-        # TODO: TEMPORARY - Save standardized images (will be removed after debugging)
-        self._save_debug_image(context.original_images.df_values, context.input.window_id, "02_standardized", "df")
-        self._save_debug_image(context.original_images.mask, context.input.window_id, "02_standardized", "mask")
+        self._save_debug_image(context.original_images.df_values, context.input.window_id, "02_standardized", "df", context.position.ref_px_original)
+        self._save_debug_image(context.original_images.mask, context.input.window_id, "02_standardized", "mask", context.position.ref_px_original)
 
         return context
 
@@ -221,8 +231,7 @@ class RotateWindowStep(ProcessingStep):
         """Apply rotation transformation"""
         self.logger.debug(f"Step 3: Rotating window '{context.input.window_id}'")
 
-        # Handle None direction_angle (default to 0)
-        rotation_angle = -context.input.window.direction_angle if context.input.window.direction_angle is not None else 0
+        rotation_angle = context.input.window.direction_angle if context.input.window.direction_angle is not None else 0
 
         df_rotated, mask_rotated, ref_px_rotated = (
             self.window_processor.rotate_window_images(
@@ -237,9 +246,8 @@ class RotateWindowStep(ProcessingStep):
         context.original_images = ImagePair(df_rotated, mask_rotated)
         context.position.ref_px_rotated = ref_px_rotated
 
-        # TODO: TEMPORARY - Save rotated images (will be removed after debugging)
-        self._save_debug_image(context.original_images.df_values, context.input.window_id, "03_rotated", "df")
-        self._save_debug_image(context.original_images.mask, context.input.window_id, "03_rotated", "mask")
+        self._save_debug_image(context.original_images.df_values, context.input.window_id, "03_rotated", "df", ref_px_rotated)
+        self._save_debug_image(context.original_images.mask, context.input.window_id, "03_rotated", "mask", ref_px_rotated)
 
         return context
 
@@ -268,9 +276,12 @@ class CropWindowStep(ProcessingStep):
             offset=crop_offset
         )
 
-        # TODO: TEMPORARY - Save cropped images (will be removed after debugging)
-        self._save_debug_image(context.original_images.df_values, context.input.window_id, "04_cropped", "df")
-        self._save_debug_image(context.original_images.mask, context.input.window_id, "04_cropped", "mask")
+        ref_in_crop = (
+            context.position.ref_px_rotated[0] - crop_offset[0],
+            context.position.ref_px_rotated[1] - crop_offset[1]
+        )
+        self._save_debug_image(context.original_images.df_values, context.input.window_id, "04_cropped", "df", ref_in_crop)
+        self._save_debug_image(context.original_images.mask, context.input.window_id, "04_cropped", "mask", ref_in_crop)
 
         return context
 
@@ -282,55 +293,39 @@ class CalculateTranslationStep(ProcessingStep):
         super().__init__(logger, debug_dir)
 
     def run(self, context: WindowProcessingContext) -> WindowProcessingContext:
-        """Calculate translation vector"""
+        """Calculate translation vector for inverted overlap convention.
+
+        Formula: offset = ref_in_crop - room_coord_pixels
+        This places the reference pixel (window facade position) at the
+        correct room coordinate when using the inverted overlap convention
+        where positive offset = skip source rows/cols.
+        """
         self.logger.debug(f"Step 5: Calculating translation for '{context.input.window_id}'")
 
-        # Validate all components before calculation
-        if context.position.room_coord_pixels.x is None or context.position.room_coord_pixels.y is None:
-            raise ValueError(
-                f"Room coordinates contain None: x={context.position.room_coord_pixels.x}, "
-                f"y={context.position.room_coord_pixels.y}"
-            )
+        # Convert rotated reference point to cropped image coordinates
+        crop_offset_x, crop_offset_y = context.cropped.offset
+        ref_in_crop_x = context.position.ref_px_rotated[0] - crop_offset_x
+        ref_in_crop_y = context.position.ref_px_rotated[1] - crop_offset_y
 
-        if context.position.ref_px_rotated is None or None in context.position.ref_px_rotated:
-            raise ValueError(f"Rotated reference point is None or contains None: {context.position.ref_px_rotated}")
+        # For inverted overlap: offset = ref_in_crop - room_coord
+        offset_x = ref_in_crop_x - int(context.position.room_coord_pixels.x)
+        offset_y = ref_in_crop_y - int(context.position.room_coord_pixels.y)
 
-        if context.cropped.offset is None or None in context.cropped.offset:
-            raise ValueError(f"Crop offset is None or contains None: {context.cropped.offset}")
-
-
-        
-        ref_x_in_crop = self._get_crop(context, axis=0)
-        ref_y_in_crop = self._get_crop(context, axis=1)
-
-
-
-        self.logger.debug("context position {}, {}".format(context.position.room_coord_pixels.x, context.position.room_coord_pixels.y))
-
-        
-        context.translation = Point2D(
-            ref_x_in_crop,
-            ref_y_in_crop
+        self.logger.debug(
+            f"  ref_px_rotated: {context.position.ref_px_rotated}, "
+            f"crop_offset: ({crop_offset_x}, {crop_offset_y}), "
+            f"ref_in_crop: ({ref_in_crop_x}, {ref_in_crop_y})"
+        )
+        self.logger.debug(
+            f"  room_coord_pixels: ({context.position.room_coord_pixels.x}, "
+            f"{context.position.room_coord_pixels.y})"
         )
 
+        context.translation = Point2D(offset_x, offset_y)
+
         self.logger.debug(f"  Translation: {context.translation}")
-        
 
         return context
-    
-    def _get_crop(self, context:WindowProcessingContext, axis:int)->int:
-        pt = context.position.room_coord_pixels.x
-        
-        if axis == 1:
-            pt = context.position.room_coord_pixels.y
-        _crop = pt
-        if context.position.ref_px_rotated[axis] > 105:
-            _crop = context.position.ref_px_rotated[axis] - pt
-
-        if context.position.ref_px_rotated[axis] ==64:
-            _crop = 64 - pt
-            
-        return _crop
 
 
 class WindowProcessingPipeline:

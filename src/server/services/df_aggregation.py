@@ -93,7 +93,8 @@ class RoomDFAggregator:
         # Initialize room DF matrix with debug directory
         df_matrix_container = RoomDFMatrix(room_width_px, room_height_px, self.debug_dir)
 
-        # Create room mask
+        # Create room mask in image coords (Y-down).
+        # PolygonRasterizer already flips Y internally, matching point_to_zero() convention.
         room_mask = self._create_room_mask(room_translated, room_width_px, room_height_px)
         df_matrix_container.set_mask(room_mask)
 
@@ -108,7 +109,11 @@ class RoomDFAggregator:
         # Step 4: Apply room mask to final result
         df_matrix_container.apply_mask()
         self.logger.info("Mask applied")
-        return df_matrix_container.get_result()
+
+        # Convert from internal Y-down image coords to Y-up world coords for frontend.
+        # Frontend maps row 0 → minY (Y-up convention), so we flip the output.
+        df_matrix, room_mask = df_matrix_container.get_result()
+        return np.flipud(df_matrix), np.flipud(room_mask)
 
     def _create_room_mask(
         self,
@@ -119,13 +124,16 @@ class RoomDFAggregator:
         """
         Create room mask from translated polygon.
 
+        PolygonRasterizer handles the Y-flip from world coords (Y-up) to
+        image coords (Y-down) internally, so we pass coords as-is.
+
         Args:
-            room_translated: Room polygon shifted to zero
+            room_translated: Room polygon shifted to zero (Y-up world coords)
             width_px: Width in pixels
             height_px: Height in pixels
 
         Returns:
-            Binary room mask
+            Binary room mask in image coordinates (Y-down)
         """
         return self.polygon_rasterizer.rasterize(
             room_translated.get_coords(),

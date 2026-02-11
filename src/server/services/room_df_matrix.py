@@ -48,7 +48,6 @@ class RoomDFMatrix:
             )
         self.room_mask = mask
 
-        # TODO: TEMPORARY - Save room mask (will be removed after debugging)
         self._save_debug_image(mask, "room_00_mask")
 
     def accumulate_window(
@@ -56,7 +55,8 @@ class RoomDFMatrix:
         df_window: np.ndarray,
         mask_window: np.ndarray,
         translation: Point2D,
-        window_id: str
+        window_id: str,
+        room_coord_pixels: Point2D = None
     ) -> None:
         """
         Place window contribution onto room canvas at correct position and accumulate.
@@ -66,8 +66,8 @@ class RoomDFMatrix:
             mask_window: Cropped window mask
             translation: Translation to apply
             window_id: Window identifier for logging
+            room_coord_pixels: Optional room coordinate for debug visualization
         """
-
 
         window_height, window_width = df_window.shape
 
@@ -150,9 +150,9 @@ class RoomDFMatrix:
                 region.dst_x_start:region.dst_x_end
             ] += masked_values
 
-            # TODO: TEMPORARY - Save intermediate aggregation state (will be removed after debugging)
             self.window_count += 1
-            self._save_debug_image(self.df_matrix, f"room_{self.window_count:02d}_after_{window_id}")
+            ref_for_debug = (int(room_coord_pixels.x), int(room_coord_pixels.y)) if room_coord_pixels else None
+            self._save_debug_image(self.df_matrix, f"room_{self.window_count:02d}_after_{window_id}", ref_for_debug)
         else:
             self.logger.warning(f"  No valid overlap region (size: {region.src_height}x{region.src_width})")
 
@@ -166,25 +166,36 @@ class RoomDFMatrix:
         """
         Calculate overlap regions between window and room.
 
+        Inverted convention: positive offset = skip source rows/cols.
+
         Args:
             window_width: Width of window image
             window_height: Height of window image
-            offset_x: X offset for placement
-            offset_y: Y offset for placement
+            offset_x: X offset for source window
+            offset_y: Y offset for source window
 
         Returns:
             OverlapRegion with source and destination boundaries
         """
-        
+        src_y_start = max(AggregationConstants.ZERO_VALUE, offset_y)
+        src_y_end = min(window_height, self.height_px + offset_y)
+        dst_y_start = max(AggregationConstants.ZERO_VALUE, -offset_y)
+        dst_y_end = dst_y_start + (src_y_end - src_y_start)
+
+        src_x_start = max(AggregationConstants.ZERO_VALUE, offset_x)
+        src_x_end = min(window_width, self.width_px + offset_x)
+        dst_x_start = max(AggregationConstants.ZERO_VALUE, -offset_x)
+        dst_x_end = dst_x_start + (src_x_end - src_x_start)
+
         return OverlapRegion(
-            src_y_start=AggregationConstants.ZERO_VALUE,
-            src_y_end=min(window_height-1, self.height_px + offset_y),
-            src_x_start=AggregationConstants.ZERO_VALUE,
-            src_x_end=min(window_width-1, self.width_px + offset_x),
-            dst_y_start=max(AggregationConstants.ZERO_VALUE, -offset_y),
-            dst_y_end=min(self.height_px, offset_y + window_height),
-            dst_x_start=max(AggregationConstants.ZERO_VALUE, -offset_x),
-            dst_x_end=min(self.width_px, offset_x + window_width)
+            src_y_start=src_y_start,
+            src_y_end=src_y_end,
+            src_x_start=src_x_start,
+            src_x_end=src_x_end,
+            dst_y_start=dst_y_start,
+            dst_y_end=dst_y_end,
+            dst_x_start=dst_x_start,
+            dst_x_end=dst_x_end
         )
 
     def apply_mask(self) -> None:
@@ -194,13 +205,11 @@ class RoomDFMatrix:
             self.logger.info(np.unique(self.df_matrix))
             self.logger.info(np.unique(self.room_mask))
 
-            # TODO: TEMPORARY - Save before masking (will be removed after debugging)
             self._save_debug_image(self.df_matrix, "room_99_before_mask")
 
             self.df_matrix *= self.room_mask
             self.logger.info("multiplication succeeded")
 
-            # TODO: TEMPORARY - Save after masking (will be removed after debugging)
             self._save_debug_image(self.df_matrix, "room_final_result")
 
     def get_result(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -212,16 +221,16 @@ class RoomDFMatrix:
         """
         return self.df_matrix, self.room_mask
 
-    def _save_debug_image(self, img: np.ndarray, filename: str) -> None:
+    def _save_debug_image(self, img: np.ndarray, filename: str, ref_point: tuple = None) -> None:
         """
-        Save debug image for aggregation steps.
+        Save debug image with room polygon outline and optional reference point.
         Only saves if DEBUG_SAVE_STEPS environment variable is set to 'true' or '1'.
 
         Args:
             img: Image array to save
             filename: Base filename (without extension)
+            ref_point: Optional (x, y) to draw as red crosshair
         """
-        # Check if debug saving is enabled via environment variable
         debug_enabled = os.getenv('DEBUG_SAVE_STEPS', '').lower() in ('true', '1', 'yes')
 
         if not debug_enabled or self.debug_dir is None:
@@ -236,7 +245,22 @@ class RoomDFMatrix:
             else:
                 img_normalized = img.astype(np.uint8)
 
-            cv2.imwrite(str(output_path), img_normalized)
+            # Convert to color to draw annotations
+            img_color = cv2.cvtColor(img_normalized, cv2.COLOR_GRAY2BGR)
+
+            # Draw room polygon outline in green
+            if self.room_mask is not None:
+                mask_uint8 = (self.room_mask * 255).astype(np.uint8)
+                contours, _ = cv2.findContours(mask_uint8, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                cv2.drawContours(img_color, contours, -1, (0, 255, 0), 1)
+
+            # Draw reference point in red
+            if ref_point is not None:
+                x, y = int(ref_point[0]), int(ref_point[1])
+                cv2.drawMarker(img_color, (x, y), (0, 0, 255), cv2.MARKER_CROSS, 10, 1)
+                cv2.circle(img_color, (x, y), 3, (0, 0, 255), -1)
+
+            cv2.imwrite(str(output_path), img_color)
             self.logger.debug(f"  [DEBUG] Saved aggregation image: {output_path}")
         except Exception as e:
             self.logger.warning(f"  Failed to save debug image {filename}: {e}")

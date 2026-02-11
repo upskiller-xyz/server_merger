@@ -93,3 +93,4 @@ class ProcessedWindow:
     df_cropped: np.ndarray
     mask_cropped: np.ndarray
     translation: 'Point2D'
+    room_coord_pixels: 'Point2D' = None

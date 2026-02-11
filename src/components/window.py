@@ -540,16 +540,50 @@ class WindowGeometry:
         )
 
     def get_candidate_edges(self):
-        # Create the two possible window edges from bounding box
-        # The 4 corners are: (x1,y1), (x2,y1), (x1,y2), (x2,y2)
-        # The two candidate edges (matching the validation logic) are:
+        # When direction_angle is available, compute the actual rotated rectangle
+        # edges instead of axis-aligned bbox edges. This handles diagonal walls.
+        if self._direction_angle is not None and self._direction_angle != 0:
+            cx = (self.x1 + self.x2) / 2
+            cy = (self.y1 + self.y2) / 2
+
+            # Wall direction (perpendicular to window normal)
+            wall_angle = self._direction_angle + math.pi / 2
+            wall_dx = math.cos(wall_angle)
+            wall_dy = math.sin(wall_angle)
+
+            # Normal direction
+            norm_dx = math.cos(self._direction_angle)
+            norm_dy = math.sin(self._direction_angle)
+
+            half_width = self.window_width_3d / 2
+            half_thick = self.wall_thickness / 2
+
+            # 4 corners of rotated rectangle
+            c1 = (cx - half_width * wall_dx - half_thick * norm_dx,
+                  cy - half_width * wall_dy - half_thick * norm_dy)
+            c2 = (cx + half_width * wall_dx - half_thick * norm_dx,
+                  cy + half_width * wall_dy - half_thick * norm_dy)
+            c3 = (cx + half_width * wall_dx + half_thick * norm_dx,
+                  cy + half_width * wall_dy + half_thick * norm_dy)
+            c4 = (cx - half_width * wall_dx + half_thick * norm_dx,
+                  cy - half_width * wall_dy + half_thick * norm_dy)
+
+            # 4 edges: interior, exterior, and two sides
+            return [
+                ShapelyLine([c1, c2]),  # interior (away from normal)
+                ShapelyLine([c3, c4]),  # exterior (toward normal)
+                ShapelyLine([c1, c4]),  # side
+                ShapelyLine([c2, c3]),  # side
+            ]
+
+        # Axis-aligned fallback when no direction_angle
         window_edge1 = ShapelyLine([(self.x1, self.y1), (self.x2, self.y1)])
         window_edge2 = ShapelyLine([(self.x1, self.y2), (self.x2, self.y2)])
         window_edge3 = ShapelyLine([(self.x1, self.y1), (self.x1, self.y2)])
         window_edge4 = ShapelyLine([(self.x2, self.y1), (self.x2, self.y2)])
         return [window_edge1, window_edge2, window_edge3, window_edge4]
 
-    def get_room_edge(self, room_polygon:RoomPolygon, tolerance=0.01)->list:
+    def get_room_edge(self, room_polygon:RoomPolygon, tolerance=0.05)->list:
         w_edges = self.get_candidate_edges()
         # Find which polygon edge contains one of the window edges
 
@@ -560,11 +594,11 @@ class WindowGeometry:
     def reference_from_polygon(
         self,
         room_polygon: 'RoomPolygon',
-        tolerance: float = 0.01
+        tolerance: float = 0.05
     ) -> Point2D:
         """
-        Finds window's reference point from the room polygon, in meters
-        the window is facing (perpendicular to the edge, pointing away from room).
+        Finds window's reference point from the room polygon, in meters.
+        Projects window center onto nearest polygon edge.
 
         Args:
             room_polygon: The room polygon containing this window
@@ -572,30 +606,24 @@ class WindowGeometry:
 
         Returns:
             reference point, meters
-
-        Raises:
-            ValueError: If window is not on any polygon edge
         """
-
-
-        # w_edges = self.get_candidate_edges()
-        # # Find which polygon edge contains one of the window edges
-        # polygon_coords =  room_polygon.get_coords()
-
         res = self.get_room_edge(room_polygon, tolerance)
-        if len(res)<1:
-            raise ValueError(
-            f"Window at ({self.x1:.2f}, {self.y1:.2f}) to ({self.x2:.2f}, {self.y2:.2f}) "
-            f"does not lie on any polygon edge"
-        )
+        if len(res) >= 1:
+            edge, i, j = res[0]
+            w_edges = self.get_candidate_edges()
+            w_edge = w_edges[j]
+            edge_coords = list(w_edge.coords)
+            return Point2D(0.5*(edge_coords[0][0] + edge_coords[1][0]),
+                           0.5*(edge_coords[0][1] + edge_coords[1][1]) )
 
-        edge, i, j = res[0]
-        w_edges = self.get_candidate_edges()
-        w_edge = w_edges[j]
-        edge_coords = list(w_edge.coords)
-
-        return Point2D(0.5*(edge_coords[0][0] + edge_coords[1][0]),
-                       0.5*(edge_coords[0][1] + edge_coords[1][1]) )
+        # Fallback: project window center onto polygon boundary
+        from shapely.geometry import Point as ShapelyPoint
+        center = self.niche_center
+        window_center = ShapelyPoint(center.x, center.y)
+        coords = room_polygon.get_coords()
+        poly_boundary = ShapelyLine(coords + [coords[0]])
+        projected = poly_boundary.interpolate(poly_boundary.project(window_center))
+        return Point2D(projected.x, projected.y)
 
     def get_reference_pixel(self) -> Tuple[int, int]:
         """
@@ -627,13 +655,14 @@ class WindowGeometry:
     def calculate_direction_from_polygon(
         self,
         room_polygon: 'RoomPolygon',
-        tolerance: float = 0.01
+        tolerance: float = 0.05
     ) -> float:
         """
-        EXPERIMENTAL: Calculate direction_angle from room polygon edge
+        Calculate direction_angle from room polygon edge.
 
         Finds which polygon edge contains the window and calculates the direction
         the window is facing (perpendicular to the edge, pointing away from room).
+        Falls back to projection-based approach for diagonal walls.
 
         Args:
             room_polygon: The room polygon containing this window
@@ -641,46 +670,46 @@ class WindowGeometry:
 
         Returns:
             direction_angle in radians (0 = pointing right/east, π/2 = pointing up/north)
-
-        Raises:
-            ValueError: If window is not on any polygon edge
         """
-        
-        
-        # w_edges = self.get_candidate_edges()
-        # # Find which polygon edge contains one of the window edges
-        polygon_coords =  room_polygon.get_coords()
+        polygon_coords = room_polygon.get_coords()
 
         res = self.get_room_edge(room_polygon, tolerance)
-        if len(res)<1:
-            raise ValueError(
-            f"Window at ({self.x1:.2f}, {self.y1:.2f}) to ({self.x2:.2f}, {self.y2:.2f}) "
-            f"does not lie on any polygon edge"
-        )
 
-        edge, i, j = res[0]
+        # Find edge index - either from edge matching or projection fallback
+        if len(res) >= 1:
+            edge, i, j = res[0]
+        else:
+            # Fallback: project window center onto polygon boundary to find nearest edge
+            from shapely.geometry import Point as ShapelyPoint
+            center = self.niche_center
+            window_center = ShapelyPoint(center.x, center.y)
+            poly_edges = room_polygon.get_edges()
+            min_dist = float('inf')
+            i = 0
+            for idx, poly_edge in enumerate(poly_edges):
+                d = window_center.distance(poly_edge)
+                if d < min_dist:
+                    min_dist = d
+                    i = idx
+            edge = poly_edges[i]
+
         v1 = polygon_coords[i]
         v2 = polygon_coords[(i + 1) % len(polygon_coords)]
 
         # Edge angle (direction along the edge)
         edge_angle = math.atan2(v2[1] - v1[1], v2[0] - v1[0])
 
-
-        perps = [edge_angle + math.pi *0.5, edge_angle - math.pi *0.5]
-        # Get center point of the window edge that's on the polygon boundary
+        perps = [edge_angle + math.pi * 0.5, edge_angle - math.pi * 0.5]
         edge_coords = list(edge.coords)
-
         room_poly = ShapelyPolygon(polygon_coords)
-        
+
         # Select the perpendicular pointing OUTSIDE the room (window facing direction)
-        # Windows face outward from the building
         calculated_angle = perps[0]
         res = [perp for perp in perps if not GeometryOps.perpendicular_dir_inside_polygon(room_poly, edge_coords, perp)]
-        if len(res)>0:
+        if len(res) > 0:
             calculated_angle = res[0]
 
         calculated_angle = GeometryOps.normalize_angle(calculated_angle)
-        
 
         return calculated_angle
     

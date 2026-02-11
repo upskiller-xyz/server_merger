@@ -26,7 +26,7 @@ class RotationHelper:
         Returns:
             2x3 rotation matrix
         """
-        return cv2.getRotationMatrix2D(center, -angle_deg, AggregationConstants.ROTATION_SCALE)
+        return cv2.getRotationMatrix2D(center, angle_deg, AggregationConstants.ROTATION_SCALE)
 
     @staticmethod
     def rotate_point(

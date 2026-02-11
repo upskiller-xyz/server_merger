@@ -73,7 +73,8 @@ class WindowAggregationOrchestrator:
             processed_window.df_cropped,
             processed_window.mask_cropped,
             processed_window.translation,
-            window_id
+            window_id,
+            processed_window.room_coord_pixels
         )
 
     def _transform_window_through_pipeline(
@@ -110,7 +111,8 @@ class WindowAggregationOrchestrator:
         return ProcessedWindow(
             df_cropped=context.original_images.df_values,
             mask_cropped=context.original_images.mask,
-            translation=context.translation
+            translation=context.translation,
+            room_coord_pixels=context.position.room_coord_pixels
         )
 
     def _log_window_metadata(self, window: WindowGeometry) -> None:
