@@ -8,7 +8,7 @@ from typing import Tuple
 import cv2
 import numpy as np
 
-from src.components.enums import AggregationConstants
+from src.core.enums import AggregationConstants
 
 
 class RotationHelper:
@@ -26,7 +26,7 @@ class RotationHelper:
         Returns:
             2x3 rotation matrix
         """
-        return cv2.getRotationMatrix2D(center, angle_deg, AggregationConstants.ROTATION_SCALE)
+        return cv2.getRotationMatrix2D(center, -angle_deg, AggregationConstants.ROTATION_SCALE)
 
     @staticmethod
     def rotate_point(
@@ -71,5 +71,5 @@ class RotationHelper:
             output_size,
             flags=cv2.INTER_NEAREST,
             borderMode=cv2.BORDER_CONSTANT,
-            borderValue=AggregationConstants.ZERO_VALUE
-        )
+            borderValue=AggregationConstants.ZERO_VALUE # type: ignore
+        ) # type: ignore
