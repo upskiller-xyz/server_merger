@@ -3,6 +3,15 @@ from enum import Enum
 from src.core.graphics_constants import GRAPHICS_CONSTANTS
 
 
+class ProcessingStep(Enum):
+    """Window processing pipeline steps"""
+    POSITION = "position"
+    STANDARDIZED = "standardized"
+    ROTATED = "rotated"
+    CROPPED = "cropped"
+    TRANSLATION = "translation"
+
+
 class ModelType(Enum):
     """Model types for daylight prediction"""
     DF_DEFAULT = "df_default"

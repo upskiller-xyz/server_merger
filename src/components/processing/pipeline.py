@@ -12,7 +12,7 @@ from src.components.processing.steps import (
     CalculateTranslationStep,
 )
 from src.components.processing.window_processor import WindowProcessor
-from src.core.utils import ScaleConverter
+from src.core.utils import ScaleConverter, ImageSaver
 
 
 class WindowProcessingPipeline:
@@ -33,7 +33,6 @@ class WindowProcessingPipeline:
         Args:
             window_processor: Window processor for transformations
             scale_converter: Scale converter for coordinate transformations
-            logger: Logger instance
         """
         self.steps = [
             CalculateWindowPositionStep(scale_converter),
@@ -69,7 +68,30 @@ class WindowProcessingPipeline:
             original_images=ImagePair(df_values, mask)
         )
 
-        for step in self.steps:
+        # Save original images
+        ImageSaver.save_step(df_values, mask, window_id, "00_original", 0)
+
+        for idx, step in enumerate(self.steps, start=1):
             context = step.run(context)
+            
+            # Save after each step
+            self._save_context_state(context, window_id, idx)
 
         return context
+    
+    def _save_context_state(
+        self,
+        context: WindowProcessingContext,
+        window_id: str,
+        step_number: int
+    ) -> None:
+        """
+        Save the current context state to images.
+        
+        Args:
+            context: Processing context
+            window_id: Window identifier
+            step_number: Step number in pipeline
+        """
+        ImageSaver.save_context_state(context, window_id, step_number)
+

@@ -122,7 +122,7 @@ class WindowProcessor:
         Returns:
             (df_rotated, mask_rotated, ref_rotated): Rotated images and rotated reference point
         """
-        angle_deg = np.degrees(direction_angle)
+        angle_deg = -np.degrees(direction_angle)
         logger.info(f"  Rotating by {direction_angle:.4f} rad ({angle_deg:.2f}deg)")
 
         center = (

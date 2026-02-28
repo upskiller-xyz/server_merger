@@ -97,7 +97,7 @@ class RoomDFAggregator:
         # Convert from internal Y-down image coords to Y-up world coords for frontend.
         # Frontend maps row 0 -> minY (Y-up convention), so we flip the output.
 
-        return df_matrix_container.get_flipped()
+        return df_matrix_container.get_result() #.get_flipped()
 
     def _create_room_mask(
         self,

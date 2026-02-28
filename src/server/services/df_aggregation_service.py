@@ -24,6 +24,7 @@ class DFAggregationService:
         Args:
             output_scale: Output scale in meters per pixel
         """
+        self.output_scale = output_scale
         self.aggregator = RoomDFAggregator(output_scale)
 
     def process_request(

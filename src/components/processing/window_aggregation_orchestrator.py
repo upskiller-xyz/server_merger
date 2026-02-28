@@ -32,10 +32,8 @@ class WindowAggregationOrchestrator:
         Args:
             window_processor: Window processor for transformations
             output_scale: Output scale in meters per pixel
-            logger: Logger instance
         """
         
-
         self.pipeline = WindowProcessingPipeline(
             window_processor=window_processor,
             scale_converter=ScaleConverter(output_scale)
