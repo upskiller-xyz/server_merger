@@ -1,12 +1,8 @@
-from typing import List, Tuple, Any, Union, Dict, Callable
+from typing import Tuple
 from dataclasses import dataclass
-from abc import ABC, abstractmethod
 import math
-import numpy as np
-import cv2
-from shapely.geometry import Polygon as ShapelyPolygon, Point as ShapelyPoint, LineString as ShapelyLine, box as ShapelyBox
-from shapely.affinity import rotate as shapely_rotate
-from src.components.graphics_constants import GRAPHICS_CONSTANTS
+from shapely.geometry import Point as ShapelyPoint
+from src.core.graphics_constants import GRAPHICS_CONSTANTS
 
 @dataclass
 class Point2D:
@@ -25,7 +21,6 @@ class Point2D:
             (x_pixel, y_pixel) tuple
         """
         return (GRAPHICS_CONSTANTS.get_pixel_value(self.x), GRAPHICS_CONSTANTS.get_pixel_value(self.y))
-
 
 @dataclass
 class Point3D:
@@ -49,8 +44,6 @@ class Point3D:
             (x_pixel, y_pixel) tuple
         """
         return self.to_point2d().to_pixel(resolution)
-
-
 
 class GeometryOps:
 

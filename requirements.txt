@@ -9,6 +9,9 @@ werkzeug>=3.0.0,<4.0.0
 # HTTP Client
 requests>=2.32.0,<3.0.0
 
+# Validation & Type Safety
+pydantic>=2.0.0,<3.0.0
+
 # Utilities & Logging
 rich>=14.0.0,<15.0.0
 

@@ -1,7 +1,7 @@
-from typing import List, Tuple, Any, Union, Dict, Callable
+from typing import List, Tuple, Any, Union, Dict, Callable, Optional
 import numpy as np
 from shapely.geometry import Polygon as ShapelyPolygon
-from src.components.enums import GeometryType
+from src.core.enums import GeometryType
 
 class GeometryAdapter:
     """
@@ -33,21 +33,25 @@ class GeometryAdapter:
 
     # Strategy map: GeometryType -> extraction function (Strategy Pattern)
     GEOMETRY_HANDLERS: Dict[GeometryType, Callable] = {
-        GeometryType.POLYGON: _extract_polygon_coords.__func__,
-        GeometryType.MULTI_POLYGON: _extract_multi_polygon_coords.__func__,
-        GeometryType.GEOMETRY_COLLECTION: _extract_geometry_collection_coords.__func__,
+        GeometryType.POLYGON: _extract_polygon_coords.__func__, # type: ignore
+        GeometryType.MULTI_POLYGON: _extract_multi_polygon_coords.__func__, # type: ignore
+        GeometryType.GEOMETRY_COLLECTION: _extract_geometry_collection_coords.__func__, # type: ignore
     }
 
     @classmethod
     def vertical_mirror(cls, poly:ShapelyPolygon)->ShapelyPolygon:
         crds = np.array([x for x in poly.exterior.coords])
         return ShapelyPolygon(crds.dot([[1,0],[0,-1]]))
+    
+    @classmethod
+    def empty(cls)->np.ndarray:
+        return np.array([[[0, 0]]], dtype=np.int32)
 
     @classmethod
     def extract_coordinates(
         cls,
         geometry: Any,
-        fallback_coords: List[Tuple[float, float]] = None
+        fallback_coords: Optional[List[Tuple[float, float]]] = None
     ) -> np.ndarray:
         """
         Extract coordinates from a Shapely geometry object
@@ -61,7 +65,7 @@ class GeometryAdapter:
         """
         # Handle empty geometry
         if geometry.is_empty:
-            return np.array([[[0, 0]]], dtype=np.int32)
+            return cls.empty()
 
         # Get geometry type
         geom_type_str = geometry.geom_type
@@ -79,5 +83,5 @@ class GeometryAdapter:
         # Fallback: use provided fallback coordinates or empty polygon
         if fallback_coords:
             return np.array([fallback_coords], dtype=np.int32)
-        return np.array([[[0, 0]]], dtype=np.int32)
+        return cls.empty()
 
