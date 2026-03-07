@@ -93,8 +93,7 @@ class RoomDFAggregator:
         logger.info(f"All {len(simulations)} windows processed")
 
         df_matrix_container.apply_mask()
-
-        # Convert from internal Y-down image coords to Y-up world coords for frontend.
+        
         # Frontend maps row 0 -> minY (Y-up convention), so we flip the output.
 
         return df_matrix_container.get_result() #.get_flipped()

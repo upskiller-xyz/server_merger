@@ -1,4 +1,4 @@
-from typing import List, Tuple, Any, Union, Dict, Callable
+from typing import List, Tuple, Any, Union, Dict, Callable, Optional
 import numpy as np
 from shapely.geometry import Polygon as ShapelyPolygon
 from src.core.enums import GeometryType
@@ -51,7 +51,7 @@ class GeometryAdapter:
     def extract_coordinates(
         cls,
         geometry: Any,
-        fallback_coords: List[Tuple[float, float]] = []
+        fallback_coords: Optional[List[Tuple[float, float]]] = None
     ) -> np.ndarray:
         """
         Extract coordinates from a Shapely geometry object

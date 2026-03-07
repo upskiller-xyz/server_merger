@@ -40,7 +40,8 @@ class TestCompositeValidator:
         mock_validator1 = Mock()
         mock_validator2 = Mock()
         
-        error = ValidationError("Invalid", None)
+        from src.server.services.validation.enums import ErrorCode
+        error = ValidationError("Invalid", ErrorCode.INVALID_VALUE)
         mock_validator1.validate.side_effect = error
         
         composite = CompositeValidator([mock_validator1, mock_validator2])

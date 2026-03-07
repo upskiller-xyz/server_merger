@@ -43,12 +43,13 @@ class ServerApplication:
 
     def _setup_dependencies(self) -> None:
         """Setup all dependencies using dependency injection"""
-        # Configure root logger for detailed debugging
-        logging.basicConfig(
-            level=logging.DEBUG,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        )
+        # Only configure logging if no handlers are already set up
+        if not logging.root.handlers:
+            logging.basicConfig(
+                level=logging.DEBUG,
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S'
+            )
 
         # DF Aggregation Service
         df_service = DFAggregationService(output_scale=ServerConfig.DEFAULT_OUTPUT_SCALE)
