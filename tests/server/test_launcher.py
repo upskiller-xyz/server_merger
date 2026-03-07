@@ -45,7 +45,7 @@ class TestServerLauncher:
         call_kwargs = mock_flask_app.run.call_args[1]
         assert call_kwargs['host'] == '0.0.0.0'
         assert call_kwargs['port'] == 8084
-        assert call_kwargs['debug'] == True
+        assert call_kwargs['debug'] == False
         assert call_kwargs['use_reloader'] == False
 
     @patch('src.server.launcher.ServerApplication')

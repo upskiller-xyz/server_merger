@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import Mock, MagicMock
 from src.server.services.validation.composite_validator import CompositeValidator
 from src.server.services.validation.validation_error import ValidationError
+from src.server.services.validation.enums import ErrorCode
 
 
 class TestCompositeValidator:
@@ -40,7 +41,6 @@ class TestCompositeValidator:
         mock_validator1 = Mock()
         mock_validator2 = Mock()
         
-        from src.server.services.validation.enums import ErrorCode
         error = ValidationError("Invalid", ErrorCode.INVALID_VALUE)
         mock_validator1.validate.side_effect = error
         
@@ -57,7 +57,7 @@ class TestCompositeValidator:
         mock_validator1 = Mock()
         mock_validator2 = Mock()
         
-        error = ValidationError("Invalid", None)
+        error = ValidationError("Invalid", ErrorCode.INVALID_VALUE)
         mock_validator2.validate.side_effect = error
         
         composite = CompositeValidator([mock_validator1, mock_validator2])
@@ -99,7 +99,7 @@ class TestCompositeValidator:
         mock_validator2 = Mock()
         mock_validator3 = Mock()
         
-        error = ValidationError("Fail", None)
+        error = ValidationError("Fail", ErrorCode.INVALID_VALUE)
         mock_validator2.validate.side_effect = error
         
         composite = CompositeValidator([mock_validator1, mock_validator2, mock_validator3])
@@ -115,7 +115,7 @@ class TestCompositeValidator:
     def test_validate_exception_propagates(self):
         """Test validation error propagates"""
         mock_validator = Mock()
-        error = ValidationError("Test error", None, field="test_field")
+        error = ValidationError("Test error", ErrorCode.INVALID_VALUE, field="test_field")
         mock_validator.validate.side_effect = error
         
         composite = CompositeValidator([mock_validator])

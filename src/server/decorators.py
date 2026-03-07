@@ -50,13 +50,14 @@ def endpoint_error_handler(
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             try:
                 # Get and validate JSON data
-                try:
-                    raw_data = request.get_json(force=True)
-                except (BadRequest, UnsupportedMediaType) as e:
-                    # If no JSON data provided, use empty dict as default
-                    raw_data = None
-
-                if raw_data is None:
+                if request.data:
+                    try:
+                        raw_data = request.get_json(force=True, silent=False)
+                        if raw_data is None:
+                            raw_data = {}
+                    except (BadRequest, UnsupportedMediaType):
+                        return jsonify({"error": "Invalid JSON in request body"}), HTTPStatus.BAD_REQUEST.value
+                else:
                     raw_data = {}
 
                 # Validate with Pydantic model if provided

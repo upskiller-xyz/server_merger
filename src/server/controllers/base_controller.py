@@ -16,7 +16,6 @@ class ServerController:
         Initialize the controller with dependencies
 
         Args:
-            logger: Logger instance for structured logging
             services: Optional dictionary of service name -> service instance
         """
         self._services = services or {}
