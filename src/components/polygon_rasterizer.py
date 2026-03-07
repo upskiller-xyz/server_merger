@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 import cv2
 import numpy as np
 
-from src.components.enums import AggregationConstants
+from src.core.enums import AggregationConstants
 
 class PolygonRasterizer:
     """Rasterizes polygon to binary mask"""
@@ -42,6 +42,6 @@ class PolygonRasterizer:
         mask = np.zeros((height, width), dtype=np.uint8)
 
         # Fill polygon
-        cv2.fillPoly(mask, [polygon_pixels], AggregationConstants.ARRAY_OFFSET_ONE)
+        cv2.fillPoly(mask, [polygon_pixels], AggregationConstants.ARRAY_OFFSET_ONE) # type: ignore
 
         return mask
