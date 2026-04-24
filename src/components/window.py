@@ -356,14 +356,12 @@ class WindowGeometry:
         Returns:
             (ref_x, ref_y) in pixels at 128x128 resolution
         """
-        # Convert wall thickness to pixels using round (0.300m = 3px, not 2px)
-        wall_thickness_px = round(self.wall_thickness / GRAPHICS_CONSTANTS.BASE_RESOLUTION_M_PER_PX)
-
-        # Calculate room facade position
+        # Calculate room facade position — use wall_thickness_px property which applies
+        # the same 0.3m fallback used by the encoder when wall thickness rounds to zero.
         room_facade_x = (
             GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX -
             GRAPHICS_CONSTANTS.WINDOW_OFFSET_PX -
-            wall_thickness_px -
+            self.wall_thickness_px -
             GRAPHICS_CONSTANTS.ROOM_FACADE_OFFSET_PX
         )
 
