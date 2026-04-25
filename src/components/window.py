@@ -214,11 +214,10 @@ class WindowGeometry:
     
     @property
     def wall_thickness_px(self):
-        wall_thickness_m = self.wall_thickness
-        # Fallback to default if calculated thickness is 0 (e.g., when y1==y2)
-        if wall_thickness_m == 0:
-            wall_thickness_m = GRAPHICS_CONSTANTS.WALL_THICKNESS_M
-        return GRAPHICS_CONSTANTS.get_pixel_value(wall_thickness_m) 
+        px = GRAPHICS_CONSTANTS.get_pixel_value(self.wall_thickness)
+        if px == 0:
+            px = GRAPHICS_CONSTANTS.get_pixel_value(GRAPHICS_CONSTANTS.WALL_THICKNESS_M)
+        return px
 
     @classmethod
     def from_corners(
