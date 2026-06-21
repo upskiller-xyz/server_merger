@@ -48,7 +48,7 @@ jobs:
       if: matrix.python-version == '3.13'
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v7
       with:
         name: coverage-reports-py${{ matrix.python-version }}
         path: coverage.*
