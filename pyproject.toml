@@ -8,11 +8,11 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.13"
 
-setuptools = "66.1.1"
+setuptools = ">=78.1.1,<82.0.0"
 
 # Web Framework & Server
 flask = "^3.0.0"
-flask-cors = "^4.0.0"
+flask-cors = ">=6.0.0,<7.0.0"
 werkzeug = "^3.0.0"
 
 # HTTP Client
