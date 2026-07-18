@@ -12,6 +12,16 @@ COPY src/ /src/
 WORKDIR /src
 
 RUN apt-get update && apt-get install -y libgl1 libglib2.0-0 libsm6 libxext6 libxrender-dev
+
+# Upgrade build tooling & purge old bundled/cached wheels the base image ships
+# (fixes pip / setuptools / wheel CVEs; ensurepip stashes vulnerable .whl files
+# that scanners still flag even after an upgrade)
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
+    && { \
+        find /usr/local/lib -type d -name "_bundled" -path "*ensurepip*" -exec rm -rf {} + 2>/dev/null; \
+        rm -rf /root/.cache/pip; \
+    }
+
 RUN pip install --no-cache-dir -r /requirements.txt
 
 RUN chmod 444 main.py
