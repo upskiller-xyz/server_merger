@@ -1,13 +1,16 @@
-from typing import Tuple
 import math
+from typing import Tuple
 
-from shapely.geometry import Polygon as ShapelyPolygon, LineString as ShapelyLine, Point as ShapelyPoint
 from shapely.affinity import rotate as shapely_rotate
-from src.core.enums import ParameterName
-from src.core.graphics_constants import GRAPHICS_CONSTANTS
-from src.components.geometry_ops import Point2D, Point3D, GeometryOps
+from shapely.geometry import LineString as ShapelyLine
+from shapely.geometry import Point as ShapelyPoint
+from shapely.geometry import Polygon as ShapelyPolygon
+
+from src.components.geometry_ops import GeometryOps, Point2D, Point3D
 from src.components.room_polygon import RoomPolygon
-from src.core.exceptions import WindowOrientationError
+from src.core.enums import ParameterName
+from src.core.exceptions import ClientInputError, WindowOrientationError
+from src.core.graphics_constants import GRAPHICS_CONSTANTS
 
 
 class WindowGeometry:
@@ -407,7 +410,7 @@ class WindowGeometry:
                 return (projected_point, i, edge)
 
         # No edge found - raise error
-        raise ValueError(
+        raise ClientInputError(
             f"Projected point ({projected_point.x:.2f}, {projected_point.y:.2f}) "
             f"does not lie on any polygon edge (tolerance: {tolerance}m)"
         )

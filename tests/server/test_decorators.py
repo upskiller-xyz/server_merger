@@ -1,11 +1,14 @@
 """Tests for server decorators"""
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 from flask import Flask
-from src.server.decorators import endpoint_error_handler
-from src.core.enums import Endpoint, HTTPStatus
 from pydantic import BaseModel
+
+from src.core.enums import Endpoint, HTTPStatus
+from src.core.exceptions import ClientInputError
+from src.server.decorators import endpoint_error_handler
 
 
 class MergeRequest(BaseModel):
@@ -85,23 +88,45 @@ class TestEndpointErrorHandler:
                 # Success path
                 assert "error" in result or "validated" in result
 
-    def test_value_error_handling(self):
-        """Test decorator catches ValueError"""
+    def test_client_input_error_echoes_message_as_400(self):
+        """ClientInputError keeps its client-facing message with a 400"""
         @endpoint_error_handler(Endpoint.MERGE)
         def merge_handler(self, data):
-            raise ValueError("Invalid input")
-        
+            raise ClientInputError("Window w1 does not lie on any polygon edge")
+
         with self.app.test_request_context(json={}, method='POST'):
             mock_self = Mock()
             result = merge_handler(mock_self)
-            
+
             # Error response is a tuple (Response, status_code)
             if isinstance(result, tuple):
                 response, status = result
                 import json
                 data = json.loads(response.get_data(as_text=True))
+                assert status == 400
                 assert "error" in data
-                assert "Invalid input" in data["error"]
+                assert "does not lie on any polygon edge" in data["error"]
+            else:
+                assert False, f"Expected tuple, got {type(result)}"
+
+    def test_plain_value_error_is_sanitized(self):
+        """A plain ValueError may carry internals and must never be echoed"""
+        @endpoint_error_handler(Endpoint.MERGE)
+        def merge_handler(self, data):
+            raise ValueError("Window w1 mask state /srv/secret.npy shape (128, 128)")
+
+        with self.app.test_request_context(json={}, method='POST'):
+            mock_self = Mock()
+            result = merge_handler(mock_self)
+
+            # Error response is a tuple (Response, status_code)
+            if isinstance(result, tuple):
+                response, status = result
+                import json
+                data = json.loads(response.get_data(as_text=True))
+                assert status == 500
+                assert "secret.npy" not in data["error"]
+                assert data["error_type"] == "InternalError"
             else:
                 assert False, f"Expected tuple, got {type(result)}"
 
@@ -133,7 +158,7 @@ class TestEndpointErrorHandler:
         """Test decorator logs errors"""
         @endpoint_error_handler(Endpoint.MERGE)
         def merge_handler(self, data):
-            raise ValueError("Test error")
+            raise ClientInputError("Test error")
         
         with self.app.test_request_context(json={}, method='POST'):
             mock_self = Mock()

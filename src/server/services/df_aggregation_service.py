@@ -1,15 +1,17 @@
 """Service for handling DF aggregation requests"""
 
-from typing import Any, Dict, List
-import numpy as np
-import cv2
 import logging
+from typing import Any, Dict, List
 
-from src.core.enums import AggregationConstants
-from src.core.graphics_constants import GRAPHICS_CONSTANTS
-from src.components.window import RoomPolygon, WindowGeometry
+import cv2
+import numpy as np
+
 from src.components.aggregation import RoomDFAggregator
-from src.models import ImageScale, SimulationData, AggregationResponse
+from src.components.window import RoomPolygon, WindowGeometry
+from src.core.enums import AggregationConstants
+from src.core.exceptions import ClientInputError
+from src.core.graphics_constants import GRAPHICS_CONSTANTS
+from src.models import AggregationResponse, ImageScale, SimulationData
 
 logger = logging.getLogger("logger")
 
@@ -90,7 +92,7 @@ class DFAggregationService:
             SimulationData object
         """
         if window_id not in windows_data:
-            raise ValueError(f"Window {window_id} not found in windows_data")
+            raise ClientInputError(f"Window {window_id} not found in windows_data")
 
         window = WindowGeometry.from_dict(windows_data[window_id])
 
