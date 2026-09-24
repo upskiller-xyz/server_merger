@@ -1,16 +1,20 @@
 """Server-side decorators for endpoint handlers"""
 
-from functools import wraps
-from typing import Callable, Any, Dict, Type, Optional
-from flask import request, jsonify
-from werkzeug.exceptions import BadRequest, UnsupportedMediaType
-from pydantic import BaseModel, ValidationError
-import traceback
 import logging
+import traceback
+from functools import wraps
+from typing import Any, Callable, Dict, Optional, Type
+
+from flask import jsonify, request
+from pydantic import BaseModel, ValidationError
+from werkzeug.exceptions import BadRequest, HTTPException, UnsupportedMediaType
 
 from src.core.enums import Endpoint, HTTPStatus
+from src.core.exceptions import ClientInputError
 
 logger = logging.getLogger("logger")
+
+INTERNAL_ERROR_TYPE = "InternalError"
 
 
 def endpoint_error_handler(
@@ -24,9 +28,9 @@ def endpoint_error_handler(
     - JSON data extraction and validation
     - Pydantic model validation (optional, for type safety)
     - BadRequest exceptions (logged and returned as 400)
-    - ValueError exceptions (logged and returned as 400)
+    - ClientInputError exceptions (client-validation messages, returned as 400)
     - Pydantic ValidationError (logged and returned as 400)
-    - Generic exceptions (logged and returned as 500)
+    - Plain ValueError / generic exceptions (logged; generic 500, no internals)
 
     The decorated function should accept data as first parameter after self:
         @endpoint_error_handler(Endpoint.MERGE)
@@ -88,10 +92,27 @@ def endpoint_error_handler(
                 ])
                 logger.error(f"{endpoint.value} validation error: {error_msgs}")
                 return jsonify({"error": f"Validation error: {error_msgs}"}), HTTPStatus.BAD_REQUEST.value
-            except ValueError as e:
-                # Log validation error
-                logger.error(f"{endpoint.value} error: {str(e)}")
+            except ClientInputError as e:
+                # Expected client-validation error: the message is built for
+                # the caller (window placement, polygon format) and safe to
+                # echo as 400.
+                logger.error(f"{endpoint.value} invalid input: {str(e)}")
                 return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST.value
+            except ValueError as e:
+                # A plain ValueError may carry internal details (coordinates,
+                # array shapes, window state) — log it, never echo it.
+                error_trace = traceback.format_exc()
+                logger.error(
+                    f"{endpoint.value} internal ValueError: {str(e)}\n"
+                    f"Traceback:\n{error_trace}"
+                )
+                return jsonify({
+                    "error": f"{endpoint.value} failed: internal error",
+                    "error_type": INTERNAL_ERROR_TYPE
+                }), HTTPStatus.INTERNAL_SERVER_ERROR.value
+            except HTTPException:
+                # Other Werkzeug HTTP errors (e.g. 413 body too large) keep their status.
+                raise
             except Exception as e:
                 # Log unexpected error with traceback
                 error_trace = traceback.format_exc()
@@ -100,9 +121,10 @@ def endpoint_error_handler(
                     f"Error type: {type(e).__name__}\n"
                     f"Traceback:\n{error_trace}"
                 )
+                # Full detail stays in the log; the caller gets no internals.
                 return jsonify({
-                    "error": f"{endpoint.value} failed: {str(e)}",
-                    "error_type": type(e).__name__
+                    "error": f"{endpoint.value} failed: internal error",
+                    "error_type": INTERNAL_ERROR_TYPE
                 }), HTTPStatus.INTERNAL_SERVER_ERROR.value
 
         return wrapper

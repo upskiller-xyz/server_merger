@@ -14,6 +14,7 @@ sys.path.insert(0, str(project_root))
 
 from src.server.application import ServerApplication
 from src.server.launcher import ServerLauncher
+from src.server.http_policy import HttpPolicy
 
 
 def main() -> None:
@@ -21,8 +22,7 @@ def main() -> None:
     launcher = ServerLauncher()
     application = launcher.create_application()
     port = int(os.getenv("PORT", 8084))
-    debug = os.getenv("DEBUG", "true").lower() in ("true", "1", "yes")
-    launcher.run_server(application, port=port, debug=debug)
+    launcher.run_server(application, port=port, debug=HttpPolicy.debug_enabled())
 
 
 # Create app instance for gunicorn only when needed
