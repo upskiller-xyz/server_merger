@@ -109,7 +109,7 @@ class TestEndpointErrorHandler:
         """Test decorator catches generic exceptions"""
         @endpoint_error_handler(Endpoint.MERGE)
         def merge_handler(self, data):
-            raise RuntimeError("Unexpected error")
+            raise RuntimeError("Unexpected error at /srv/app/secret.py")
         
         with self.app.test_request_context(json={}, method='POST'):
             mock_self = Mock()
@@ -120,8 +120,11 @@ class TestEndpointErrorHandler:
                 response, status = result
                 import json
                 data = json.loads(response.get_data(as_text=True))
+                assert status == 500
                 assert "error" in data
-                assert "Unexpected error" in data["error"]
+                # Internals (message, paths, exception class) never reach the caller
+                assert "secret.py" not in data["error"]
+                assert data["error_type"] == "InternalError"
             else:
                 assert False, f"Expected tuple, got {type(result)}"
 

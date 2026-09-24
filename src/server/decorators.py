@@ -12,6 +12,8 @@ from src.core.enums import Endpoint, HTTPStatus
 
 logger = logging.getLogger("logger")
 
+INTERNAL_ERROR_TYPE = "InternalError"
+
 
 def endpoint_error_handler(
     endpoint: Endpoint,
@@ -100,9 +102,10 @@ def endpoint_error_handler(
                     f"Error type: {type(e).__name__}\n"
                     f"Traceback:\n{error_trace}"
                 )
+                # Full detail stays in the log; the caller gets no internals.
                 return jsonify({
-                    "error": f"{endpoint.value} failed: {str(e)}",
-                    "error_type": type(e).__name__
+                    "error": f"{endpoint.value} failed: internal error",
+                    "error_type": INTERNAL_ERROR_TYPE
                 }), HTTPStatus.INTERNAL_SERVER_ERROR.value
 
         return wrapper

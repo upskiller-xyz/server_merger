@@ -3,11 +3,12 @@
 from typing import Dict, Any
 from pathlib import Path
 from flask import Flask, Response, jsonify, render_template
-from flask_cors import CORS
 import logging
 
 from src.core.enums import ServiceName, Endpoint, HTTPStatus
+from src.core.settings import settings
 from src.server.controllers.base_controller import ServerController
+from src.server.http_policy import MEBIBYTE, HttpPolicy
 from src.server.services.df_aggregation_service import DFAggregationService
 from src.server.services.validation import ValidationError
 from src.server.services.validation.request import DFAggregationRequestValidator, RequestField
@@ -35,7 +36,8 @@ class ServerApplication:
         # Set template folder to src/server/templates
         template_folder = Path(__file__).parent / "templates"
         self._app: Flask = Flask(app_name, template_folder=str(template_folder))
-        CORS(self._app)
+        # Per-window simulations + masks as JSON; generous but bounded.
+        HttpPolicy.from_environment(default_max_bytes=256 * MEBIBYTE).apply(self._app)
         self._controller: ServerController | None = None
         self._request_validator = DFAggregationRequestValidator()
         self._setup_dependencies()
@@ -46,7 +48,8 @@ class ServerApplication:
         # Only configure logging if no handlers are already set up
         if not logging.root.handlers:
             logging.basicConfig(
-                level=logging.DEBUG,
+                # DEBUG logs request internals; only with DEBUG=true.
+                level=logging.DEBUG if settings.DEBUG else logging.INFO,
                 format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                 datefmt='%Y-%m-%d %H:%M:%S'
             )
