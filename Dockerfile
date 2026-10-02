@@ -1,5 +1,6 @@
 
-FROM python:3.12
+# Base image pinned by digest (reproducible, tamper-evident); Dependabot bumps it.
+FROM python:3.12@sha256:4d1caded1f729ae443eb803f26ffde7b61e696aeaef62f099abb6dd6b14257c7
 
 # Use .dockerignore to exclude unnecessary files (e.g. .git, tests, docs, assets, etc.)
 
@@ -37,6 +38,12 @@ RUN pip install --no-cache-dir -r /requirements.txt
 
 RUN chmod 444 main.py
 RUN chmod 444 /requirements.txt
+
+# Unprivileged runtime user (no shell, no home). SAVE_IMAGES/DEBUG image dumps
+# need a writable volume mounted at IMAGES_OUTPUT_DIR when enabled.
+RUN groupadd --system --gid 10001 app \
+    && useradd --system --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
+USER app
 
 ENV PORT 8084
 

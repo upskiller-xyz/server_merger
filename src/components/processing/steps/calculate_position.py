@@ -2,8 +2,9 @@
 
 import logging
 
-from src.components.processing.context import WindowProcessingContext, PositionData
+from src.components.processing.context import PositionData, WindowProcessingContext
 from src.components.processing.steps.base import ProcessingStep
+from src.core.exceptions import ClientInputError
 from src.core.utils import ScaleConverter
 
 logger = logging.getLogger("logger")
@@ -26,16 +27,14 @@ class CalculateWindowPositionStep(ProcessingStep):
         # Convert to room canvas coordinates (point_to_zero handles Y-flip to image coords)
         point_shifted = context.input.room_polygon.point_to_zero(room_coord_meters)
         if point_shifted.x is None or point_shifted.y is None:
-            raise ValueError(
-                f"Window {context.input.window_id}: point calculation returned None coordinates: "
-                f"x={point_shifted.x}, y={point_shifted.y}"
+            raise ClientInputError(
+                f"Window {context.input.window_id}: cannot place window on the room polygon"
             )
 
         room_coord_pixels = self.scale_converter.point_meters_to_pixels(point_shifted)
         if room_coord_pixels.x is None or room_coord_pixels.y is None:
-            raise ValueError(
-                f"Window {context.input.window_id}: point_meters_to_pixels returned None coordinates: "
-                f"x={room_coord_pixels.x}, y={room_coord_pixels.y}"
+            raise ClientInputError(
+                f"Window {context.input.window_id}: cannot place window on the room polygon"
             )
 
         # Get window reference point in 128x128 image

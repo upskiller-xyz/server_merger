@@ -1,10 +1,13 @@
-from typing import List, Tuple
 import math
-import numpy as np
+from typing import List, Tuple
 
-from shapely.geometry import Polygon as ShapelyPolygon, LineString as ShapelyLine
+import numpy as np
 from shapely.affinity import rotate as shapely_rotate
+from shapely.geometry import LineString as ShapelyLine
+from shapely.geometry import Polygon as ShapelyPolygon
+
 from src.components.geometry_ops import Point2D
+from src.core.exceptions import ClientInputError
 
 
 class RoomPolygon:
@@ -26,7 +29,7 @@ class RoomPolygon:
             vertices: List of (x, y) coordinates in meters
         """
         if len(vertices) < 3:
-            raise ValueError("Polygon must have at least 3 vertices")
+            raise ClientInputError("Polygon must have at least 3 vertices")
 
         self._vertices = [Point2D(x, y) for x, y in vertices]
 
@@ -135,7 +138,7 @@ class RoomPolygon:
         edges = [(i,edge) for i,edge in enumerate(edges) if edge.buffer(tolerance).contains(window_line)]
 
         if len(edges)<1:
-            raise ValueError(
+            raise ClientInputError(
             f"Window at ({window_line.coords[0][0]:.2f}, {window_line.coords[0][1]:.2f}) to ({window_line.coords[1][0]:.2f}, {window_line.coords[1][1]:.2f}) "
             f"does not lie on any polygon edge")
         
@@ -162,7 +165,7 @@ class RoomPolygon:
             ValueError: If data format is invalid
         """
         if not data:
-            raise ValueError("Polygon data cannot be empty")
+            raise ClientInputError("Polygon data cannot be empty")
 
         # Check format of first element to determine data structure
         first_element = data[0]
@@ -174,7 +177,7 @@ class RoomPolygon:
             # List of lists/tuples format: [[0, 0], ...] or [(0, 0), ...]
             vertices = [(point[0], point[1]) for point in data]
         else:
-            raise ValueError(
+            raise ClientInputError(
                 f"Invalid polygon data format. Expected list of dicts or list of lists/tuples, "
                 f"but got list of {type(first_element).__name__}"
             )
