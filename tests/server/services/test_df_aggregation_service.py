@@ -285,6 +285,25 @@ class TestDFAggregationService:
         
         assert result.mask.dtype == np.uint8
 
+    def test_mask_out_of_range_values_wrap_like_legacy_numpy(self):
+        """Test out-of-range mask values wrap modulo 256 instead of raising"""
+        # Arrange
+        values = [[256, -1, 300.7], [-1.5, 1, 0]]
+
+        # Act
+        result = DFAggregationService._to_uint8_mask(values)
+
+        # Assert
+        assert result.dtype == np.uint8
+        assert result.tolist() == [[0, 255, 44], [255, 1, 0]]
+
+    def test_mask_non_finite_values_raise(self):
+        """Test NaN/inf mask values raise as they did with numpy 1.x"""
+        with pytest.raises(ValueError):
+            DFAggregationService._to_uint8_mask([[float("nan"), 1]])
+        with pytest.raises(OverflowError):
+            DFAggregationService._to_uint8_mask([[float("inf"), 1]])
+
     def test_multiple_windows_processing(self):
         """Test creating simulation objects with multiple windows"""
         service = DFAggregationService()
