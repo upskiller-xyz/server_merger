@@ -2,9 +2,9 @@ name: Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, master, develop ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, master, develop ]
 
 jobs:
   test:
@@ -43,7 +43,8 @@ jobs:
 
     - name: Generate coverage badge
       run: |
-        pip install coverage-badge
+        # coverage-badge imports pkg_resources, which setuptools 82 removed
+        pip install coverage-badge "setuptools>=81,<82"
         coverage-badge -o coverage.svg
       if: matrix.python-version == '3.13'
 
