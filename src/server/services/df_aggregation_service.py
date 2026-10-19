@@ -97,7 +97,7 @@ class DFAggregationService:
         window = WindowGeometry.from_dict(windows_data[window_id])
 
         df_values = np.array(sim_dict['df_values'], dtype=np.float32)
-        mask = np.array(sim_dict['mask'], dtype=np.uint8)
+        mask = self._to_uint8_mask(sim_dict['mask'])
 
         if df_values.shape != mask.shape:
             logger.warning(
@@ -116,6 +116,26 @@ class DFAggregationService:
             window=window,
             scale=scale
         )
+
+    @staticmethod
+    def _to_uint8_mask(values: Any) -> np.ndarray:
+        """
+        Convert request mask values to uint8 with the legacy wrap-around semantics.
+
+        NumPy < 2 wrapped out-of-range Python numbers modulo 256 (floats truncated
+        first) when building a uint8 array; NumPy >= 2 raises OverflowError instead.
+        Only that case is routed through int64, which reproduces the old result.
+
+        Args:
+            values: Nested list (or array) of mask values from the request
+
+        Returns:
+            uint8 mask array
+        """
+        try:
+            return np.array(values, dtype=np.uint8)
+        except OverflowError:
+            return np.array(values, dtype=np.int64).astype(np.uint8)
 
     def _resize(self, arr) -> np.ndarray:
         target_size = (GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX, GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX)
