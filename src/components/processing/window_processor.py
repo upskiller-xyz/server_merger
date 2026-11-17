@@ -4,16 +4,18 @@ Window Processing Utilities
 This module provides the WindowProcessor class for processing individual window simulations.
 """
 
-from typing import Tuple, Callable
+import logging
+from typing import Callable, Tuple
+
 import cv2
 import numpy as np
-import logging
 
 from src.core.enums import AggregationConstants
 from src.core.graphics_constants import GRAPHICS_CONSTANTS
 from src.core.utils import RotationHelper
 
 logger = logging.getLogger("logger")
+
 
 class WindowProcessor:
     """
@@ -28,7 +30,7 @@ class WindowProcessor:
         Args:
             logger: Logger instance
         """
-        
+
         self.rotation_helper = RotationHelper()
 
     def _apply_transformation(
@@ -36,7 +38,7 @@ class WindowProcessor:
         df_values: np.ndarray,
         mask: np.ndarray,
         transform_fn: Callable[[np.ndarray], np.ndarray],
-        mask_transform_fn: Callable[[np.ndarray], np.ndarray] = lambda s: s
+        mask_transform_fn: Callable[[np.ndarray], np.ndarray] = lambda s: s,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Apply the same transformation to both DF values and mask.
@@ -55,9 +57,7 @@ class WindowProcessor:
         return df_transformed, mask_transformed
 
     def standardize_window_images(
-        self,
-        df_values: np.ndarray,
-        mask: np.ndarray
+        self, df_values: np.ndarray, mask: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Standardize window images to 128x128 at 0.1m/px scale.
@@ -92,13 +92,20 @@ class WindowProcessor:
         def resize_transform(img: np.ndarray) -> np.ndarray:
             return cv2.resize(
                 img,
-                (GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX, GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX),
-                interpolation=cv2.INTER_NEAREST
+                (
+                    GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX,
+                    GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX,
+                ),
+                interpolation=cv2.INTER_NEAREST,
             )
 
-        df_std, mask_std = self._apply_transformation(df_values, mask, resize_transform, resize_transform)
-        logger.debug(f"  Standardize output: df_std.shape={df_std.shape}, mask_std.shape={mask_std.shape}")
-        
+        df_std, mask_std = self._apply_transformation(
+            df_values, mask, resize_transform, resize_transform
+        )
+        logger.debug(
+            f"  Standardize output: df_std.shape={df_std.shape}, mask_std.shape={mask_std.shape}"
+        )
+
         return df_std, mask_std
 
     def rotate_window_images(
@@ -107,7 +114,7 @@ class WindowProcessor:
         mask: np.ndarray,
         window_ref_px: Tuple[int, int],
         direction_angle: float,
-        window_id: str
+        window_id: str,
     ) -> Tuple[np.ndarray, np.ndarray, Tuple[int, int]]:
         """
         Rotate window images by direction_angle and rotate the reference point.
@@ -125,10 +132,7 @@ class WindowProcessor:
         angle_deg = -np.degrees(direction_angle)
         logger.info(f"  Rotating by {direction_angle:.4f} rad ({angle_deg:.2f}deg)")
 
-        center = (
-            df_values.shape[1] * 0.5,
-            df_values.shape[0] * 0.5
-        )
+        center = (df_values.shape[1] * 0.5, df_values.shape[0] * 0.5)
 
         rotation_matrix = self.rotation_helper.get_rotation_matrix(angle_deg, center)
 
@@ -146,7 +150,9 @@ class WindowProcessor:
             df_values, mask, rotate_df_transform, rotate_mask_transform
         )
 
-        logger.debug(f"  Rotation output: df_rotated.shape={df_rotated.shape}, mask_rotated.shape={mask_rotated.shape}")
+        logger.debug(
+            f"  Rotation output: df_rotated.shape={df_rotated.shape}, mask_rotated.shape={mask_rotated.shape}"
+        )
 
         ref_rotated = self.rotation_helper.rotate_point(window_ref_px, rotation_matrix)
 
@@ -155,10 +161,7 @@ class WindowProcessor:
         return df_rotated, mask_rotated, ref_rotated
 
     def crop_to_visible_bounds(
-        self,
-        df_values: np.ndarray,
-        mask: np.ndarray,
-        window_id: str
+        self, df_values: np.ndarray, mask: np.ndarray, window_id: str
     ) -> Tuple[np.ndarray, np.ndarray, Tuple[int, int]]:
         """
         Crop DF and mask to the visible (non-zero mask) bounds.
@@ -174,14 +177,20 @@ class WindowProcessor:
                 - mask_cropped: Cropped mask
                 - crop_offset: (offset_x, offset_y) of crop region in original image
         """
-        logger.debug(f"  Crop input: df_values.shape={df_values.shape}, mask.shape={mask.shape}")
+        logger.debug(
+            f"  Crop input: df_values.shape={df_values.shape}, mask.shape={mask.shape}"
+        )
         logger.debug(f"  Mask dtype={mask.dtype}, unique values={np.unique(mask)}")
-        
+
         nonzero_coords = np.nonzero(mask)
 
         if len(nonzero_coords[0]) == 0:
             logger.warning(f"  No visible pixels found in mask for '{window_id}'")
-            return df_values, mask, (AggregationConstants.ZERO_VALUE, AggregationConstants.ZERO_VALUE)
+            return (
+                df_values,
+                mask,
+                (AggregationConstants.ZERO_VALUE, AggregationConstants.ZERO_VALUE),
+            )
 
         y_min = np.min(nonzero_coords[0])
         y_max = np.max(nonzero_coords[0])
@@ -190,8 +199,8 @@ class WindowProcessor:
 
         logger.debug(f"  Nonzero bounds: x=[{x_min}, {x_max}], y=[{y_min}, {y_max}]")
 
-        df_cropped = df_values[y_min:y_max + 1, x_min:x_max + 1]
-        mask_cropped = mask[y_min:y_max + 1, x_min:x_max + 1]
+        df_cropped = df_values[y_min : y_max + 1, x_min : x_max + 1]
+        mask_cropped = mask[y_min : y_max + 1, x_min : x_max + 1]
         crop_offset = (int(x_min), int(y_min))
 
         logger.info(

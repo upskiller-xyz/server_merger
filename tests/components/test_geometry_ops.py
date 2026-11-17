@@ -1,8 +1,10 @@
 """Tests for geometry operations."""
 
-import pytest
 import math
-from src.components.geometry_ops import Point2D, Point3D, GeometryOps
+
+import pytest
+
+from src.components.geometry_ops import GeometryOps, Point2D, Point3D
 from src.components.room_polygon import RoomPolygon
 
 
@@ -184,17 +186,13 @@ class TestGeometryOps:
     def test_perpendicular_dir_inside_polygon(self):
         """Test checking if perpendicular points inside polygon."""
         from shapely.geometry import Polygon
-        room_coords = [
-            (0.0, 0.0),
-            (10.0, 0.0),
-            (10.0, 10.0),
-            (0.0, 10.0)
-        ]
+
+        room_coords = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]
         shapely_poly = Polygon(room_coords)
-        
+
         # Edge coordinates (top edge)
         edge_coords = [(0.0, 10.0), (10.0, 10.0)]
-        
+
         # Perpendicular pointing downward (into polygon)
         perp_inside = math.pi * 1.5  # 270 degrees
         result_inside = GeometryOps.perpendicular_dir_inside_polygon(

@@ -3,8 +3,8 @@
 from typing import Any
 
 from .base_validator import Validator
-from .validation_error import ValidationError
 from .enums import ErrorCode
+from .validation_error import ValidationError
 
 
 class TypeValidator(Validator):
@@ -20,5 +20,5 @@ class TypeValidator(Validator):
                 message=f"Field '{field_path}' must be {self.expected_type.__name__}, got {type(value).__name__}",
                 error_code=ErrorCode.INVALID_TYPE,
                 field=field_path,
-                value=value
+                value=value,
             )

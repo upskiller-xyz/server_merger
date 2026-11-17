@@ -5,14 +5,15 @@ This module provides the WindowAggregationOrchestrator class that orchestrates
 the processing of individual windows through a transformation pipeline.
 """
 
-import numpy as np
 import logging
 
-from src.components.window import RoomPolygon, WindowGeometry
-from src.models import SimulationData, ProcessedWindow, RoomDFMatrix
-from src.components.processing.window_processor import WindowProcessor
-from src.core.utils import ScaleConverter
+import numpy as np
+
 from src.components.processing.pipeline import WindowProcessingPipeline
+from src.components.processing.window_processor import WindowProcessor
+from src.components.window import RoomPolygon, WindowGeometry
+from src.core.utils import ScaleConverter
+from src.models import ProcessedWindow, RoomDFMatrix, SimulationData
 
 logger = logging.getLogger("logger")
 
@@ -33,10 +34,10 @@ class WindowAggregationOrchestrator:
             window_processor: Window processor for transformations
             output_scale: Output scale in meters per pixel
         """
-        
+
         self.pipeline = WindowProcessingPipeline(
             window_processor=window_processor,
-            scale_converter=ScaleConverter(output_scale)
+            scale_converter=ScaleConverter(output_scale),
         )
 
     def process_and_accumulate_window(
@@ -44,7 +45,7 @@ class WindowAggregationOrchestrator:
         window_id: str,
         sim_data: SimulationData,
         room_original: RoomPolygon,
-        df_matrix_container: RoomDFMatrix
+        df_matrix_container: RoomDFMatrix,
     ) -> None:
         """
         Process a single window through the transformation pipeline and accumulate.
@@ -68,14 +69,11 @@ class WindowAggregationOrchestrator:
             processed_window.df_cropped,
             processed_window.mask_cropped,
             processed_window.translation,
-            window_id
+            window_id,
         )
 
     def _transform_window_through_pipeline(
-        self,
-        window_id: str,
-        sim_data: SimulationData,
-        room_original: RoomPolygon
+        self, window_id: str, sim_data: SimulationData, room_original: RoomPolygon
     ) -> ProcessedWindow:
         """
         Transform window through the processing pipeline.
@@ -93,13 +91,13 @@ class WindowAggregationOrchestrator:
             window=sim_data.window,
             df_values=sim_data.df_values,
             mask=sim_data.mask,
-            room_polygon=room_original
+            room_polygon=room_original,
         )
-        
+
         return ProcessedWindow(
-            df_cropped=context.cropped.images.df_values, # type: ignore
-            mask_cropped=context.cropped.images.mask, # type: ignore
-            translation=context.translation #type:ignore
+            df_cropped=context.cropped.images.df_values,  # type: ignore
+            mask_cropped=context.cropped.images.mask,  # type: ignore
+            translation=context.translation,  # type:ignore
         )
 
     def _log_window_metadata(self, window: WindowGeometry) -> None:

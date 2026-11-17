@@ -1,10 +1,13 @@
 """Tests for DF aggregation request validator"""
 
-import pytest
 import numpy as np
-from src.server.services.validation.request.df_aggregation_request_validator import DFAggregationRequestValidator
-from src.server.services.validation.validation_error import ValidationError
+import pytest
+
 from src.server.services.validation.enums import ErrorCode
+from src.server.services.validation.request.df_aggregation_request_validator import (
+    DFAggregationRequestValidator,
+)
+from src.server.services.validation.validation_error import ValidationError
 
 
 class TestDFAggregationRequestValidator:
@@ -18,12 +21,12 @@ class TestDFAggregationRequestValidator:
         """Test error when room_polygon is missing"""
         data = {
             "windows": {"w1": self._valid_window()},
-            "simulation": {"w1": self._valid_simulation()}
+            "simulation": {"w1": self._valid_simulation()},
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         assert exc_info.value.error_code == ErrorCode.MISSING_FIELD
         assert "room_polygon" in exc_info.value.message
 
@@ -31,24 +34,24 @@ class TestDFAggregationRequestValidator:
         """Test error when windows field is missing"""
         data = {
             "room_polygon": self._valid_polygon(),
-            "simulation": {"w1": self._valid_simulation()}
+            "simulation": {"w1": self._valid_simulation()},
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         assert exc_info.value.error_code == ErrorCode.MISSING_FIELD
 
     def test_missing_simulation(self):
         """Test error when simulation field is missing"""
         data = {
             "room_polygon": self._valid_polygon(),
-            "windows": {"w1": self._valid_window()}
+            "windows": {"w1": self._valid_window()},
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         assert exc_info.value.error_code == ErrorCode.MISSING_FIELD
 
     def test_empty_windows_dict(self):
@@ -56,12 +59,12 @@ class TestDFAggregationRequestValidator:
         data = {
             "room_polygon": self._valid_polygon(),
             "windows": {},
-            "simulation": {"w1": self._valid_simulation()}
+            "simulation": {"w1": self._valid_simulation()},
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         assert exc_info.value.error_code == ErrorCode.EMPTY_DATA
         assert "windows" in exc_info.value.message.lower()
 
@@ -70,12 +73,12 @@ class TestDFAggregationRequestValidator:
         data = {
             "room_polygon": self._valid_polygon(),
             "windows": {"w1": self._valid_window()},
-            "simulation": {}
+            "simulation": {},
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         assert exc_info.value.error_code == ErrorCode.EMPTY_DATA
         assert "simulation" in exc_info.value.message.lower()
 
@@ -84,12 +87,12 @@ class TestDFAggregationRequestValidator:
         data = {
             "room_polygon": self._valid_polygon(),
             "windows": {"w1": "not_a_dict"},
-            "simulation": {"w1": self._valid_simulation()}
+            "simulation": {"w1": self._valid_simulation()},
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         assert exc_info.value.error_code == ErrorCode.INVALID_TYPE
 
     def test_simulation_not_dict(self):
@@ -97,12 +100,12 @@ class TestDFAggregationRequestValidator:
         data = {
             "room_polygon": self._valid_polygon(),
             "windows": {"w1": self._valid_window()},
-            "simulation": {"w1": "not_a_dict"}
+            "simulation": {"w1": "not_a_dict"},
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         assert exc_info.value.error_code == ErrorCode.INVALID_TYPE
 
     def test_missing_simulation_for_window(self):
@@ -110,37 +113,44 @@ class TestDFAggregationRequestValidator:
         data = {
             "room_polygon": self._valid_polygon(),
             "windows": {"w1": self._valid_window(), "w2": self._valid_window()},
-            "simulation": {"w1": self._valid_simulation()}
+            "simulation": {"w1": self._valid_simulation()},
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         assert exc_info.value.error_code == ErrorCode.MISSING_FIELD
-        assert "w2" in str(exc_info.value.message) or "w2" in str(exc_info.value.context)
+        assert "w2" in str(exc_info.value.message) or "w2" in str(
+            exc_info.value.context
+        )
 
     def test_missing_window_for_simulation(self):
         """Test error when simulation has no corresponding window"""
         data = {
             "room_polygon": self._valid_polygon(),
             "windows": {"w1": self._valid_window()},
-            "simulation": {"w1": self._valid_simulation(), "w2": self._valid_simulation()}
+            "simulation": {
+                "w1": self._valid_simulation(),
+                "w2": self._valid_simulation(),
+            },
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         assert exc_info.value.error_code == ErrorCode.MISSING_FIELD
-        assert "w2" in str(exc_info.value.message) or "w2" in str(exc_info.value.context)
+        assert "w2" in str(exc_info.value.message) or "w2" in str(
+            exc_info.value.context
+        )
 
     def test_valid_single_window(self):
         """Test valid request with single window"""
         data = {
             "room_polygon": self._valid_polygon(),
             "windows": {"w1": self._valid_window()},
-            "simulation": {"w1": self._valid_simulation()}
+            "simulation": {"w1": self._valid_simulation()},
         }
-        
+
         # Should not raise
         self.validator.validate(data)
 
@@ -151,15 +161,15 @@ class TestDFAggregationRequestValidator:
             "windows": {
                 "w1": self._valid_window(),
                 "w2": self._valid_window(),
-                "w3": self._valid_window()
+                "w3": self._valid_window(),
             },
             "simulation": {
                 "w1": self._valid_simulation(),
                 "w2": self._valid_simulation(),
-                "w3": self._valid_simulation()
-            }
+                "w3": self._valid_simulation(),
+            },
         }
-        
+
         # Should not raise
         self.validator.validate(data)
 
@@ -168,29 +178,35 @@ class TestDFAggregationRequestValidator:
         data = {
             "room_polygon": [[0, 0], [1, 1]],  # Too few vertices
             "windows": {"w1": self._valid_window()},
-            "simulation": {"w1": self._valid_simulation()}
+            "simulation": {"w1": self._valid_simulation()},
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         assert exc_info.value.error_code == ErrorCode.INVALID_VALUE
 
     def test_invalid_window_geometry(self):
         """Test error when window geometry is invalid"""
         data = {
             "room_polygon": self._valid_polygon(),
-            "windows": {"w1": {
-                "x1": 0.0, "y1": 0.0, "z1": 2.0,
-                "x2": 1.0, "y2": 1.0, "z2": 1.0,  # z1 > z2
-                "direction_angle": 0.0
-            }},
-            "simulation": {"w1": self._valid_simulation()}
+            "windows": {
+                "w1": {
+                    "x1": 0.0,
+                    "y1": 0.0,
+                    "z1": 2.0,
+                    "x2": 1.0,
+                    "y2": 1.0,
+                    "z2": 1.0,  # z1 > z2
+                    "direction_angle": 0.0,
+                }
+            },
+            "simulation": {"w1": self._valid_simulation()},
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         assert exc_info.value.error_code == ErrorCode.INVALID_VALUE
 
     def test_invalid_simulation_data(self):
@@ -198,12 +214,12 @@ class TestDFAggregationRequestValidator:
         data = {
             "room_polygon": self._valid_polygon(),
             "windows": {"w1": self._valid_window()},
-            "simulation": {"w1": {"df_values": np.zeros((128, 128))}}  # Missing mask
+            "simulation": {"w1": {"df_values": np.zeros((128, 128))}},  # Missing mask
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         assert exc_info.value.error_code == ErrorCode.MISSING_FIELD
 
     def test_multiple_windows_missing_simulation(self):
@@ -213,18 +229,18 @@ class TestDFAggregationRequestValidator:
             "windows": {
                 "w1": self._valid_window(),
                 "w2": self._valid_window(),
-                "w3": self._valid_window()
+                "w3": self._valid_window(),
             },
-            "simulation": {
-                "w1": self._valid_simulation()
-            }
+            "simulation": {"w1": self._valid_simulation()},
         }
-        
+
         with pytest.raises(ValidationError) as exc_info:
             self.validator.validate(data)
-        
+
         # Should mention missing windows
-        assert "w2" in str(exc_info.value.context) or "w3" in str(exc_info.value.context)
+        assert "w2" in str(exc_info.value.context) or "w3" in str(
+            exc_info.value.context
+        )
 
     def test_window_id_with_special_chars(self):
         """Test valid window IDs with special characters"""
@@ -233,15 +249,15 @@ class TestDFAggregationRequestValidator:
             "windows": {
                 "window-1": self._valid_window(),
                 "window_2": self._valid_window(),
-                "w.3": self._valid_window()
+                "w.3": self._valid_window(),
             },
             "simulation": {
                 "window-1": self._valid_simulation(),
                 "window_2": self._valid_simulation(),
-                "w.3": self._valid_simulation()
-            }
+                "w.3": self._valid_simulation(),
+            },
         }
-        
+
         # Should not raise
         self.validator.validate(data)
 
@@ -252,9 +268,9 @@ class TestDFAggregationRequestValidator:
             "windows": {"w1": self._valid_window()},
             "simulation": {"w1": self._valid_simulation()},
             "extra_field": "ignored",
-            "another_extra": {"nested": "data"}
+            "another_extra": {"nested": "data"},
         }
-        
+
         # Should not raise - extra fields are ignored
         self.validator.validate(data)
 
@@ -268,15 +284,16 @@ class TestDFAggregationRequestValidator:
     def _valid_window():
         """Return valid window geometry"""
         return {
-            "x1": 0.0, "y1": 0.0, "z1": 0.0,
-            "x2": 1.0, "y2": 1.0, "z2": 2.0,
-            "direction_angle": 0.0
+            "x1": 0.0,
+            "y1": 0.0,
+            "z1": 0.0,
+            "x2": 1.0,
+            "y2": 1.0,
+            "z2": 2.0,
+            "direction_angle": 0.0,
         }
 
     @staticmethod
     def _valid_simulation():
         """Return valid simulation data"""
-        return {
-            "df_values": np.zeros((128, 128)),
-            "mask": np.ones((128, 128))
-        }
+        return {"df_values": np.zeros((128, 128)), "mask": np.ones((128, 128))}

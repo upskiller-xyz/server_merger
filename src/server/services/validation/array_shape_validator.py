@@ -1,11 +1,12 @@
 """Validator for array dimensions"""
 
-from typing import Any, Optional, List
+from typing import Any, List, Optional
+
 import numpy as np
 
 from .base_validator import Validator
-from .validation_error import ValidationError
 from .enums import ErrorCode
+from .validation_error import ValidationError
 
 
 class ArrayShapeValidator(Validator):
@@ -21,7 +22,7 @@ class ArrayShapeValidator(Validator):
             raise ValidationError(
                 message=f"Field '{field_path}' must be an array, got {type(value).__name__}",
                 error_code=ErrorCode.INVALID_TYPE,
-                field=field_path
+                field=field_path,
             )
 
         arr = np.array(value) if isinstance(value, list) else value
@@ -31,7 +32,7 @@ class ArrayShapeValidator(Validator):
                 message=f"Field '{field_path}' must be {self.expected_ndim}D array, got {arr.ndim}D",
                 error_code=ErrorCode.INVALID_DIMENSIONS,
                 field=field_path,
-                context={"shape": arr.shape, "expected_ndim": self.expected_ndim}
+                context={"shape": arr.shape, "expected_ndim": self.expected_ndim},
             )
 
         if self.valid_shapes and arr.shape not in self.valid_shapes:
@@ -40,5 +41,5 @@ class ArrayShapeValidator(Validator):
                 message=f"Field '{field_path}' has invalid shape {arr.shape}, expected one of: {valid_shapes_str}",
                 error_code=ErrorCode.INVALID_DIMENSIONS,
                 field=field_path,
-                context={"shape": arr.shape, "valid_shapes": self.valid_shapes}
+                context={"shape": arr.shape, "valid_shapes": self.valid_shapes},
             )

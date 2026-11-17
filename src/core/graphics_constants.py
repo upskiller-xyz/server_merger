@@ -4,6 +4,7 @@ Graphics Constants for Image Encoding
 Centralized location for all magic numbers related to image rendering.
 Following the Single Responsibility Principle and avoiding magic numbers in code.
 """
+
 from dataclasses import dataclass
 
 
@@ -35,11 +36,10 @@ class ImageGraphicsConstants:
     ROOM_FACADE_OFFSET_PX: int = 1  # pixels offset from window for C-frame adjacency
     # Window placement tolerance (meters) for edge matching
     WINDOW_PLACEMENT_TOLERANCE: float = 0.05
-    WINDOW_HEIGHT_TOLERANCE:float =  1e-6
+    WINDOW_HEIGHT_TOLERANCE: float = 1e-6
 
     @classmethod
-    def get_pixel_value(cls, value:float, 
-                        image_size:int=BASE_IMAGE_SIZE_PX):
+    def get_pixel_value(cls, value: float, image_size: int = BASE_IMAGE_SIZE_PX):
         return round(value / cls.get_resolution(image_size))
 
     @classmethod

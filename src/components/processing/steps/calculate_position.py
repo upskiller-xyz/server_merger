@@ -19,10 +19,14 @@ class CalculateWindowPositionStep(ProcessingStep):
 
     def run(self, context: WindowProcessingContext) -> WindowProcessingContext:
         """Calculate window room coordinates and reference point"""
-        logger.debug(f"Step 1: Calculating window position for '{context.input.window_id}'")
+        logger.debug(
+            f"Step 1: Calculating window position for '{context.input.window_id}'"
+        )
 
         # Get window reference point on room polygon (edge midpoint on room wall)
-        room_coord_meters = context.input.window.reference_from_polygon(context.input.room_polygon)
+        room_coord_meters = context.input.window.reference_from_polygon(
+            context.input.room_polygon
+        )
 
         # Convert to room canvas coordinates (point_to_zero handles Y-flip to image coords)
         point_shifted = context.input.room_polygon.point_to_zero(room_coord_meters)
@@ -43,7 +47,7 @@ class CalculateWindowPositionStep(ProcessingStep):
         context.position = PositionData(
             room_coord_meters=room_coord_meters,
             room_coord_pixels=room_coord_pixels,
-            ref_px_original=ref_px_original
+            ref_px_original=ref_px_original,
         )
 
         return context

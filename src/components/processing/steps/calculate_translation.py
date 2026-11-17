@@ -27,12 +27,18 @@ class CalculateTranslationStep(ProcessingStep):
         logger.debug(f"Step 5: Calculating translation for '{context.input.window_id}'")
 
         if context.position is None:
-            raise MissingPositionError(f"Position context is None for window '{context.input.window_id}'")
+            raise MissingPositionError(
+                f"Position context is None for window '{context.input.window_id}'"
+            )
         if context.position.ref_px_rotated is None:
-            raise MissingPositionError(f"Position context is None for window '{context.input.window_id}'")
+            raise MissingPositionError(
+                f"Position context is None for window '{context.input.window_id}'"
+            )
         if context.cropped is None:
-            raise MissingPositionError(f"Cropped geometry is None for window '{context.input.window_id}'")
-        
+            raise MissingPositionError(
+                f"Cropped geometry is None for window '{context.input.window_id}'"
+            )
+
         crop_offset_x, crop_offset_y = context.cropped.offset
         ref_px_x = context.position.ref_px_rotated[0]
         ref_px_y = context.position.ref_px_rotated[1]
@@ -44,7 +50,7 @@ class CalculateTranslationStep(ProcessingStep):
         offset_y = ref_px_y - crop_offset_y - room_px_y
 
         context.translation = Point2D(offset_x, offset_y)
-        
+
         logger.debug(
             f"  ref_px_rotated: ({ref_px_x}, {ref_px_y}), "
             f"crop_offset: ({crop_offset_x}, {crop_offset_y}), "

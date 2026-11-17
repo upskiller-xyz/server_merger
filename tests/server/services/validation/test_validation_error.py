@@ -1,9 +1,10 @@
 """Tests for ValidationError"""
 
-import pytest
 import numpy as np
-from src.server.services.validation.validation_error import ValidationError
+import pytest
+
 from src.server.services.validation.enums import ErrorCode
+from src.server.services.validation.validation_error import ValidationError
 
 
 class TestValidationError:
@@ -12,8 +13,7 @@ class TestValidationError:
     def test_create_with_message_and_code(self):
         """Test creating validation error with message and code"""
         error = ValidationError(
-            message="Invalid value",
-            error_code=ErrorCode.INVALID_TYPE
+            message="Invalid value", error_code=ErrorCode.INVALID_TYPE
         )
         assert error.message == "Invalid value"
         assert error.error_code == ErrorCode.INVALID_TYPE
@@ -29,7 +29,7 @@ class TestValidationError:
             error_code=ErrorCode.INVALID_RANGE,
             field="room.width",
             value=150,
-            context=context
+            context=context,
         )
         assert error.message == "Value out of range"
         assert error.error_code == ErrorCode.INVALID_RANGE
@@ -40,8 +40,7 @@ class TestValidationError:
     def test_to_dict_basic(self):
         """Test to_dict with basic fields"""
         error = ValidationError(
-            message="Invalid value",
-            error_code=ErrorCode.INVALID_TYPE
+            message="Invalid value", error_code=ErrorCode.INVALID_TYPE
         )
         result = error.to_dict()
         assert result["error"] == "Invalid value"
@@ -52,7 +51,7 @@ class TestValidationError:
         error = ValidationError(
             message="Invalid value",
             error_code=ErrorCode.INVALID_TYPE,
-            field="windows.window1.x"
+            field="windows.window1.x",
         )
         result = error.to_dict()
         assert result["field"] == "windows.window1.x"
@@ -60,9 +59,7 @@ class TestValidationError:
     def test_to_dict_with_python_value(self):
         """Test to_dict converts Python value to string"""
         error = ValidationError(
-            message="Invalid value",
-            error_code=ErrorCode.INVALID_VALUE,
-            value=42
+            message="Invalid value", error_code=ErrorCode.INVALID_VALUE, value=42
         )
         result = error.to_dict()
         # to_dict converts all values to strings
@@ -74,7 +71,7 @@ class TestValidationError:
         error = ValidationError(
             message="Invalid value",
             error_code=ErrorCode.INVALID_TYPE,
-            value=np.int32(42)
+            value=np.int32(42),
         )
         result = error.to_dict()
         assert result["value"] == 42
@@ -85,7 +82,7 @@ class TestValidationError:
         error = ValidationError(
             message="Invalid value",
             error_code=ErrorCode.INVALID_TYPE,
-            value=np.float32(3.14)
+            value=np.float32(3.14),
         )
         result = error.to_dict()
         assert abs(result["value"] - 3.14) < 0.01
@@ -96,7 +93,7 @@ class TestValidationError:
         error = ValidationError(
             message="Invalid array",
             error_code=ErrorCode.INVALID_DIMENSIONS,
-            value=np.array([[1, 2], [3, 4]])
+            value=np.array([[1, 2], [3, 4]]),
         )
         result = error.to_dict()
         assert "value" in result
@@ -106,7 +103,7 @@ class TestValidationError:
         error = ValidationError(
             message="Out of range",
             error_code=ErrorCode.INVALID_RANGE,
-            context={"min": 0, "max": 100, "value": 150}
+            context={"min": 0, "max": 100, "value": 150},
         )
         result = error.to_dict()
         # Context is stored but may not be in to_dict (depends on implementation)
@@ -114,10 +111,7 @@ class TestValidationError:
 
     def test_is_exception(self):
         """Test ValidationError is an Exception"""
-        error = ValidationError(
-            message="Test error",
-            error_code=ErrorCode.INVALID_TYPE
-        )
+        error = ValidationError(message="Test error", error_code=ErrorCode.INVALID_TYPE)
         assert isinstance(error, Exception)
 
     def test_raise_and_catch(self):
@@ -126,9 +120,9 @@ class TestValidationError:
             raise ValidationError(
                 message="Test error",
                 error_code=ErrorCode.INVALID_TYPE,
-                field="test_field"
+                field="test_field",
             )
-        
+
         error = exc_info.value
         assert error.message == "Test error"
         assert error.field == "test_field"
@@ -136,7 +130,6 @@ class TestValidationError:
     def test_str_representation(self):
         """Test string representation"""
         error = ValidationError(
-            message="Invalid value",
-            error_code=ErrorCode.INVALID_TYPE
+            message="Invalid value", error_code=ErrorCode.INVALID_TYPE
         )
         assert str(error) == "Invalid value"

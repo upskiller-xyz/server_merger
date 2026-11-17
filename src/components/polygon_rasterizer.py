@@ -1,20 +1,19 @@
-from typing import List, Tuple, Any, Union, Dict, Callable
-from dataclasses import dataclass
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Tuple, Union
+
 import cv2
 import numpy as np
 
 from src.core.enums import AggregationConstants
+
 
 class PolygonRasterizer:
     """Rasterizes polygon to binary mask"""
 
     @staticmethod
     def rasterize(
-        polygon: List[List[float]],
-        width: int,
-        height: int,
-        scale: float
+        polygon: List[List[float]], width: int, height: int, scale: float
     ) -> np.ndarray:
         """
         Convert polygon to binary mask.
@@ -34,14 +33,17 @@ class PolygonRasterizer:
         # Flip Y-axis: our coordinate system has origin at bottom-left,
         # but image coordinates have origin at top-left
         polygon_pixels = np.array(
-            [[int(np.round(x / scale)), int(np.round((height - 1) - (y / scale)))] for x, y in polygon],
-            dtype=np.int32
+            [
+                [int(np.round(x / scale)), int(np.round((height - 1) - (y / scale)))]
+                for x, y in polygon
+            ],
+            dtype=np.int32,
         )
 
         # Create empty mask
         mask = np.zeros((height, width), dtype=np.uint8)
 
         # Fill polygon
-        cv2.fillPoly(mask, [polygon_pixels], AggregationConstants.ARRAY_OFFSET_ONE) # type: ignore
+        cv2.fillPoly(mask, [polygon_pixels], AggregationConstants.ARRAY_OFFSET_ONE)  # type: ignore
 
         return mask

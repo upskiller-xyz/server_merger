@@ -3,8 +3,8 @@
 from typing import Any
 
 from .base_validator import Validator
-from .validation_error import ValidationError
 from .enums import ErrorCode
+from .validation_error import ValidationError
 
 
 class NonEmptyValidator(Validator):
@@ -16,5 +16,5 @@ class NonEmptyValidator(Validator):
             raise ValidationError(
                 message=f"Field '{field_path}' cannot be empty",
                 error_code=ErrorCode.EMPTY_DATA,
-                field=field_path
+                field=field_path,
             )

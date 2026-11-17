@@ -4,8 +4,9 @@ Scale Converter
 Handles conversions between meters and pixels for DF aggregation.
 """
 
-from src.components.geometry_ops import Point2D
 import numpy as np
+
+from src.components.geometry_ops import Point2D
 
 
 class ScaleConverter:
@@ -45,8 +46,8 @@ class ScaleConverter:
         """
         # float() keeps the float64 division numpy 1.x used for float32 inputs (NEP 50)
         return Point2D(
-            np.round(float(point.x) / self.meters_per_pixel) ,
-            np.round(float(point.y) / self.meters_per_pixel) 
+            np.round(float(point.x) / self.meters_per_pixel),
+            np.round(float(point.y) / self.meters_per_pixel),
         )
 
     def pixels_to_meters(self, pixels: int) -> float:
@@ -71,7 +72,4 @@ class ScaleConverter:
         Returns:
             Point in meters
         """
-        return Point2D(
-            point.x * self.meters_per_pixel,
-            point.y * self.meters_per_pixel
-        )
+        return Point2D(point.x * self.meters_per_pixel, point.y * self.meters_per_pixel)

@@ -163,27 +163,31 @@ payload = {
     "room_polygon": [[0, 0], [5, 0], [5, 4], [0, 4]],
     "windows": {
         "window_1": {
-            "x1": 1.0, "y1": 0.0, "z1": 1.0,
-            "x2": 2.5, "y2": 0.3, "z2": 2.5,
-            "direction_angle": 0.0
+            "x1": 1.0,
+            "y1": 0.0,
+            "z1": 1.0,
+            "x2": 2.5,
+            "y2": 0.3,
+            "z2": 2.5,
+            "direction_angle": 0.0,
         }
     },
     "simulations": {
         "window_1": {
             "df_values": np.random.rand(128, 128).tolist(),
-            "mask": np.ones((128, 128), dtype=int).tolist()
+            "mask": np.ones((128, 128), dtype=int).tolist(),
         }
-    }
+    },
 }
 
 # Send request
-response = requests.post('http://localhost:8081/merge', json=payload)
+response = requests.post("http://localhost:8081/merge", json=payload)
 
 # Parse response
 if response.status_code == 200:
     data = response.json()
-    df_matrix = np.array(data['result'])
-    room_mask = np.array(data['mask'])
+    df_matrix = np.array(data["result"])
+    room_mask = np.array(data["mask"])
     print(f"Result shape: {df_matrix.shape}")
     print(f"DF range: [{df_matrix.min():.2f}, {df_matrix.max():.2f}]")
 else:

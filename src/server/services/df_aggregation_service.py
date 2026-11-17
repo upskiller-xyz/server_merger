@@ -33,7 +33,7 @@ class DFAggregationService:
         self,
         room_polygon: List[List[float]],
         windows_data: Dict[str, dict],
-        simulations: Dict[str, dict]
+        simulations: Dict[str, dict],
     ) -> Dict[str, Any]:
         """
         Process aggregation request.
@@ -55,9 +55,7 @@ class DFAggregationService:
         return AggregationResponse.from_arrays(df_matrix, room_mask).to_dict()
 
     def _create_simulation_objects(
-        self,
-        windows_data: Dict[str, dict],
-        simulations: Dict[str, dict]
+        self, windows_data: Dict[str, dict], simulations: Dict[str, dict]
     ) -> Dict[str, SimulationData]:
         """
         Create simulation data objects from request data.
@@ -75,10 +73,7 @@ class DFAggregationService:
         }
 
     def _create_simulation_data(
-        self,
-        window_id: str,
-        sim_dict: dict,
-        windows_data: Dict[str, dict]
+        self, window_id: str, sim_dict: dict, windows_data: Dict[str, dict]
     ) -> SimulationData:
         """
         Create a single SimulationData object.
@@ -96,8 +91,8 @@ class DFAggregationService:
 
         window = WindowGeometry.from_dict(windows_data[window_id])
 
-        df_values = np.array(sim_dict['df_values'], dtype=np.float32)
-        mask = self._to_uint8_mask(sim_dict['mask'])
+        df_values = np.array(sim_dict["df_values"], dtype=np.float32)
+        mask = self._to_uint8_mask(sim_dict["mask"])
 
         if df_values.shape != mask.shape:
             logger.warning(
@@ -111,10 +106,7 @@ class DFAggregationService:
         scale = ImageScale.from_image_size(img_size)
 
         return SimulationData(
-            df_values=df_values,
-            mask=mask,
-            window=window,
-            scale=scale
+            df_values=df_values, mask=mask, window=window, scale=scale
         )
 
     @staticmethod
@@ -138,5 +130,8 @@ class DFAggregationService:
             return np.array(values, dtype=np.int64).astype(np.uint8)
 
     def _resize(self, arr) -> np.ndarray:
-        target_size = (GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX, GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX)
+        target_size = (
+            GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX,
+            GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX,
+        )
         return cv2.resize(arr, target_size, interpolation=cv2.INTER_NEAREST)

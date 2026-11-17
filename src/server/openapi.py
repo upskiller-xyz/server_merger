@@ -1,11 +1,12 @@
 """OpenAPI specification generator from Pydantic models for auto-documentation"""
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 from src.__version__ import version as app_version
 from src.server.schemas import (
+    ErrorResponse,
     MergeRequest,
     MergeResponse,
-    ErrorResponse,
 )
 
 
@@ -17,7 +18,7 @@ class OpenAPISpecGenerator:
         title: str = "Server Merger API",
         description: str = "Daylight Factor aggregation/merge service for combining multiple window simulations",
         version: str = app_version,
-        base_url: str = "/"
+        base_url: str = "/",
     ) -> Dict[str, Any]:
         """
         Generate OpenAPI 3.0 specification from Pydantic models.
@@ -37,20 +38,11 @@ class OpenAPISpecGenerator:
                 "title": title,
                 "description": description,
                 "version": version,
-                "contact": {
-                    "name": "API Support"
-                }
+                "contact": {"name": "API Support"},
             },
-            "servers": [
-                {
-                    "url": base_url,
-                    "description": "Server API"
-                }
-            ],
+            "servers": [{"url": base_url, "description": "Server API"}],
             "paths": OpenAPISpecGenerator._generate_paths(),
-            "components": {
-                "schemas": OpenAPISpecGenerator._generate_schemas()
-            }
+            "components": {"schemas": OpenAPISpecGenerator._generate_schemas()},
         }
 
     @staticmethod
@@ -71,13 +63,13 @@ class OpenAPISpecGenerator:
                                         "type": "object",
                                         "properties": {
                                             "status": {"type": "string"},
-                                            "service": {"type": "string"}
-                                        }
+                                            "service": {"type": "string"},
+                                        },
                                     }
                                 }
-                            }
+                            },
                         }
-                    }
+                    },
                 }
             },
             "/merge": {
@@ -91,36 +83,42 @@ class OpenAPISpecGenerator:
                             "application/json": {
                                 "schema": {"$ref": "#/components/schemas/MergeRequest"}
                             }
-                        }
+                        },
                     },
                     "responses": {
                         "200": {
                             "description": "Success - Aggregated DF matrix and mask",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/MergeResponse"}
+                                    "schema": {
+                                        "$ref": "#/components/schemas/MergeResponse"
+                                    }
                                 }
-                            }
+                            },
                         },
                         "400": {
                             "description": "Validation error",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
                                 }
-                            }
+                            },
                         },
                         "500": {
                             "description": "Server error",
                             "content": {
                                 "application/json": {
-                                    "schema": {"$ref": "#/components/schemas/ErrorResponse"}
+                                    "schema": {
+                                        "$ref": "#/components/schemas/ErrorResponse"
+                                    }
                                 }
-                            }
-                        }
-                    }
+                            },
+                        },
+                    },
                 }
-            }
+            },
         }
 
     @staticmethod

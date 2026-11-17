@@ -1,7 +1,10 @@
-from typing import List, Tuple, Any, Union, Dict, Callable, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 from shapely.geometry import Polygon as ShapelyPolygon
+
 from src.core.enums import GeometryType
+
 
 class GeometryAdapter:
     """
@@ -25,7 +28,9 @@ class GeometryAdapter:
     @staticmethod
     def _extract_geometry_collection_coords(geometry: Any) -> List[Tuple[float, float]]:
         """Extract coordinates from GeometryCollection by finding polygons"""
-        polygons = [g for g in geometry.geoms if g.geom_type == GeometryType.POLYGON.value]
+        polygons = [
+            g for g in geometry.geoms if g.geom_type == GeometryType.POLYGON.value
+        ]
         if not polygons:
             return []
         largest = max(polygons, key=lambda p: p.area)
@@ -33,25 +38,23 @@ class GeometryAdapter:
 
     # Strategy map: GeometryType -> extraction function (Strategy Pattern)
     GEOMETRY_HANDLERS: Dict[GeometryType, Callable] = {
-        GeometryType.POLYGON: _extract_polygon_coords.__func__, # type: ignore
-        GeometryType.MULTI_POLYGON: _extract_multi_polygon_coords.__func__, # type: ignore
-        GeometryType.GEOMETRY_COLLECTION: _extract_geometry_collection_coords.__func__, # type: ignore
+        GeometryType.POLYGON: _extract_polygon_coords.__func__,  # type: ignore
+        GeometryType.MULTI_POLYGON: _extract_multi_polygon_coords.__func__,  # type: ignore
+        GeometryType.GEOMETRY_COLLECTION: _extract_geometry_collection_coords.__func__,  # type: ignore
     }
 
     @classmethod
-    def vertical_mirror(cls, poly:ShapelyPolygon)->ShapelyPolygon:
+    def vertical_mirror(cls, poly: ShapelyPolygon) -> ShapelyPolygon:
         crds = np.array([x for x in poly.exterior.coords])
-        return ShapelyPolygon(crds.dot([[1,0],[0,-1]]))
-    
+        return ShapelyPolygon(crds.dot([[1, 0], [0, -1]]))
+
     @classmethod
-    def empty(cls)->np.ndarray:
+    def empty(cls) -> np.ndarray:
         return np.array([[[0, 0]]], dtype=np.int32)
 
     @classmethod
     def extract_coordinates(
-        cls,
-        geometry: Any,
-        fallback_coords: Optional[List[Tuple[float, float]]] = None
+        cls, geometry: Any, fallback_coords: Optional[List[Tuple[float, float]]] = None
     ) -> np.ndarray:
         """
         Extract coordinates from a Shapely geometry object
@@ -84,4 +87,3 @@ class GeometryAdapter:
         if fallback_coords:
             return np.array([fallback_coords], dtype=np.int32)
         return cls.empty()
-

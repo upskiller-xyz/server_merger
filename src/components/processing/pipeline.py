@@ -2,17 +2,21 @@
 
 import numpy as np
 
-from src.components.window import WindowGeometry, RoomPolygon
-from src.components.processing.context import WindowInputData, ImagePair, WindowProcessingContext
+from src.components.processing.context import (
+    ImagePair,
+    WindowInputData,
+    WindowProcessingContext,
+)
 from src.components.processing.steps import (
-    CalculateWindowPositionStep,
-    StandardizeWindowStep,
-    RotateWindowStep,
-    CropWindowStep,
     CalculateTranslationStep,
+    CalculateWindowPositionStep,
+    CropWindowStep,
+    RotateWindowStep,
+    StandardizeWindowStep,
 )
 from src.components.processing.window_processor import WindowProcessor
-from src.core.utils import ScaleConverter, ImageSaver
+from src.components.window import RoomPolygon, WindowGeometry
+from src.core.utils import ImageSaver, ScaleConverter
 
 
 class WindowProcessingPipeline:
@@ -23,9 +27,7 @@ class WindowProcessingPipeline:
     """
 
     def __init__(
-        self,
-        window_processor: WindowProcessor,
-        scale_converter: ScaleConverter
+        self, window_processor: WindowProcessor, scale_converter: ScaleConverter
     ):
         """
         Initialize pipeline with dependencies.
@@ -39,7 +41,7 @@ class WindowProcessingPipeline:
             StandardizeWindowStep(window_processor),
             RotateWindowStep(window_processor),
             CropWindowStep(window_processor),
-            CalculateTranslationStep()
+            CalculateTranslationStep(),
         ]
 
     def process(
@@ -48,7 +50,7 @@ class WindowProcessingPipeline:
         window: WindowGeometry,
         df_values: np.ndarray,
         mask: np.ndarray,
-        room_polygon: RoomPolygon
+        room_polygon: RoomPolygon,
     ) -> WindowProcessingContext:
         """
         Process window through the pipeline.
@@ -65,7 +67,7 @@ class WindowProcessingPipeline:
         """
         context = WindowProcessingContext(
             input=WindowInputData(window_id, window, room_polygon),
-            original_images=ImagePair(df_values, mask)
+            original_images=ImagePair(df_values, mask),
         )
 
         # Save original images
@@ -73,25 +75,21 @@ class WindowProcessingPipeline:
 
         for idx, step in enumerate(self.steps, start=1):
             context = step.run(context)
-            
+
             # Save after each step
             self._save_context_state(context, window_id, idx)
 
         return context
-    
+
     def _save_context_state(
-        self,
-        context: WindowProcessingContext,
-        window_id: str,
-        step_number: int
+        self, context: WindowProcessingContext, window_id: str, step_number: int
     ) -> None:
         """
         Save the current context state to images.
-        
+
         Args:
             context: Processing context
             window_id: Window identifier
             step_number: Step number in pipeline
         """
         ImageSaver.save_context_state(context, window_id, step_number)
-

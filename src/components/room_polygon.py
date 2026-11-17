@@ -34,12 +34,12 @@ class RoomPolygon:
         self._vertices = [Point2D(x, y) for x, y in vertices]
 
     @property
-    def width(self)->float:
+    def width(self) -> float:
         min_x, _, max_x, _ = self.get_bounds()
         return max_x - min_x
-    
+
     @property
-    def height(self)->float:
+    def height(self) -> float:
         _, min_y, _, max_y = self.get_bounds()
         return max_y - min_y
         # room_height_px = int(np.ceil((max_y - min_y) / self.output_scale))
@@ -49,7 +49,9 @@ class RoomPolygon:
         """Get polygon vertices"""
         return self._vertices
 
-    def rotate(self, angle_degrees: float, center: Point2D = Point2D(0, 0)) -> 'RoomPolygon':
+    def rotate(
+        self, angle_degrees: float, center: Point2D = Point2D(0, 0)
+    ) -> "RoomPolygon":
         """
         Rotate polygon around a center point using Shapely
 
@@ -62,61 +64,62 @@ class RoomPolygon:
         """
 
         # Create Shapely polygon from vertices
-        
+
         shapely_poly = ShapelyPolygon(self.get_coords())
-        
+
         rotated_poly = shapely_rotate(
-            shapely_poly,
-            angle_degrees,
-            origin=(center.x, center.y)
+            shapely_poly, angle_degrees, origin=(center.x, center.y)
         )
 
         # Extract rotated vertices
-        rotated_vertices = list(rotated_poly.exterior.coords)[:-1]  # Remove duplicate last point
+        rotated_vertices = list(rotated_poly.exterior.coords)[
+            :-1
+        ]  # Remove duplicate last point
         return RoomPolygon(rotated_vertices)
 
     def get_bounds(self):
         min_x, min_y = np.array(self.get_coords()).min(axis=0)
         max_x, max_y = np.array(self.get_coords()).max(axis=0)
         return (min_x, min_y, max_x, max_y)
-    
-    def translate(self, point:Point2D)->'RoomPolygon':
+
+    def translate(self, point: Point2D) -> "RoomPolygon":
         verts = [(x - point.x, y - point.y) for x, y in self.get_coords()]
         return RoomPolygon(verts)
-    
-    def shift_to_zero(self)->'RoomPolygon':
+
+    def shift_to_zero(self) -> "RoomPolygon":
         min_x, min_y, _, _ = self.get_bounds()
         return self.translate(Point2D(min_x, min_y))
-    
-    def point_to_zero(self, point:Point2D)->Point2D:
+
+    def point_to_zero(self, point: Point2D) -> Point2D:
         min_x, min_y, _, max_y = self.get_bounds()
         # X: shift to min_x = 0
         # Y: flip from world coords (Y-up) to image coords (Y-down)
         # Formula: (height) - (point_y - min_y) = (max_y - min_y) - (point_y - min_y)
-        
+
         height = max_y - min_y
         return Point2D(point.x - min_x, height - (point.y - min_y))
-    
+
     def get_edges(self):
         polygon_coords = self.get_coords()
-        
-        return [ShapelyLine([
-            polygon_coords[i], 
-            polygon_coords[(i + 1) % len(polygon_coords)]]) for i in range(len(polygon_coords))]
-    
+
+        return [
+            ShapelyLine(
+                [polygon_coords[i], polygon_coords[(i + 1) % len(polygon_coords)]]
+            )
+            for i in range(len(polygon_coords))
+        ]
+
     def get_coords(self):
         return [(v.x, v.y) for v in self._vertices]
 
-    def _build_edge(self, ind:int):
+    def _build_edge(self, ind: int):
         v1 = self._vertices[ind]
         v2 = self._vertices[(ind + 1) % len(self._vertices)]
 
         return ShapelyLine([(v1.x, v1.y), (v2.x, v2.y)])
 
     def _window_edge_and_rotation(
-        self,
-        window_line: ShapelyLine,
-        tolerance: float = 0.01
+        self, window_line: ShapelyLine, tolerance: float = 0.01
     ) -> Tuple[ShapelyLine, int, float]:
         """
         Find which polygon edge contains the window and calculate rotation needed.
@@ -132,16 +135,20 @@ class RoomPolygon:
             - rotation_angle_degrees: Angle to rotate so window edge is horizontal (constant y)
             - needs_flip: Whether to flip direction so room extends in -y direction
         """
-        
 
         edges = [self._build_edge(i) for i in range(len(self._vertices))]
-        edges = [(i,edge) for i,edge in enumerate(edges) if edge.buffer(tolerance).contains(window_line)]
+        edges = [
+            (i, edge)
+            for i, edge in enumerate(edges)
+            if edge.buffer(tolerance).contains(window_line)
+        ]
 
-        if len(edges)<1:
+        if len(edges) < 1:
             raise ClientInputError(
-            f"Window at ({window_line.coords[0][0]:.2f}, {window_line.coords[0][1]:.2f}) to ({window_line.coords[1][0]:.2f}, {window_line.coords[1][1]:.2f}) "
-            f"does not lie on any polygon edge")
-        
+                f"Window at ({window_line.coords[0][0]:.2f}, {window_line.coords[0][1]:.2f}) to ({window_line.coords[1][0]:.2f}, {window_line.coords[1][1]:.2f}) "
+                f"does not lie on any polygon edge"
+            )
+
         ind, edge = edges[0]
         v1 = self._vertices[ind]
         v2 = self._vertices[(ind + 1) % len(self._vertices)]
@@ -150,7 +157,7 @@ class RoomPolygon:
         return edge, ind, edge_angle
 
     @classmethod
-    def from_dict(cls, data: List) -> 'RoomPolygon':
+    def from_dict(cls, data: List) -> "RoomPolygon":
         """
         Create polygon from list of coordinate dictionaries or lists
 

@@ -1,11 +1,12 @@
 """Validator for window geometry parameters"""
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 import numpy as np
 
-from ..validation_error import ValidationError
-from ..enums import ErrorCode
 from ..base_validator import Validator
+from ..enums import ErrorCode
+from ..validation_error import ValidationError
 from .enums import WindowField
 
 
@@ -28,7 +29,7 @@ class WindowGeometryValidator(Validator):
                 raise ValidationError(
                     message=f"Window geometry missing required field: {field}",
                     error_code=ErrorCode.MISSING_FIELD,
-                    field=f"{field_path}.{field}"
+                    field=f"{field_path}.{field}",
                 )
 
             # Validate numeric type
@@ -37,7 +38,7 @@ class WindowGeometryValidator(Validator):
                     message=f"Window parameter '{field}' must be numeric, got {type(value[field]).__name__}",
                     error_code=ErrorCode.INVALID_TYPE,
                     field=f"{field_path}.{field}",
-                    value=value[field]
+                    value=value[field],
                 )
 
         # Validate z1 < z2 (height constraint)
@@ -49,5 +50,5 @@ class WindowGeometryValidator(Validator):
                 message=f"Window {z1_field} ({value[z1_field]}) must be less than {z2_field} ({value[z2_field]})",
                 error_code=ErrorCode.INVALID_VALUE,
                 field=f"{field_path}.{z1_field}",
-                context={z1_field: value[z1_field], z2_field: value[z2_field]}
+                context={z1_field: value[z1_field], z2_field: value[z2_field]},
             )

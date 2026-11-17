@@ -11,6 +11,7 @@ class ImageScale:
     Image scale configuration calculated proportionally from reference scale.
     Reference: 128x128 image with 0.1 m/px, window_offset = 12px
     """
+
     size: int
     meters_per_pixel: float
 
@@ -21,7 +22,7 @@ class ImageScale:
         return int(GRAPHICS_CONSTANTS.WINDOW_OFFSET_PX * scale_factor)
 
     @classmethod
-    def from_image_size(cls, img_size: int) -> 'ImageScale':
+    def from_image_size(cls, img_size: int) -> "ImageScale":
         """
         Calculate scale proportionally based on reference (128px = 0.1m/px).
 
