@@ -16,7 +16,7 @@ pydantic>=2.12.0,<3.0.0
 
 # Numerical & Image Processing
 numpy>=2.3.3,<3.0.0
-opencv-python>=4.12.0.88,<5.0.0
+opencv-python-headless>=4.13.0.90,<5.0.0
 
 # Geometry Operations
 shapely>=2.1.2,<3.0.0
