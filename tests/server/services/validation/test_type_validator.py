@@ -1,9 +1,10 @@
 """Tests for TypeValidator"""
 
 import pytest
+
+from src.server.services.validation.enums import ErrorCode
 from src.server.services.validation.type_validator import TypeValidator
 from src.server.services.validation.validation_error import ValidationError
-from src.server.services.validation.enums import ErrorCode
 
 
 class TestTypeValidator:
@@ -50,7 +51,7 @@ class TestTypeValidator:
         validator = TypeValidator(str)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(42, "field.name")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.INVALID_TYPE
         assert "field.name" in error.message
@@ -62,7 +63,7 @@ class TestTypeValidator:
         validator = TypeValidator(int)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate("not an int", "count")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.INVALID_TYPE
         assert "count" in error.message
@@ -72,7 +73,7 @@ class TestTypeValidator:
         validator = TypeValidator(dict)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate([1, 2, 3], "mapping")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.INVALID_TYPE
         assert "dict" in error.message
@@ -94,7 +95,7 @@ class TestTypeValidator:
         validator = TypeValidator(float)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate("not a float", "room.window.width")
-        
+
         error = exc_info.value
         assert error.field == "room.window.width"
 
@@ -104,7 +105,7 @@ class TestTypeValidator:
         invalid_value = "not an int"
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(invalid_value, "field")
-        
+
         error = exc_info.value
         assert error.value == invalid_value
 
@@ -118,11 +119,11 @@ class TestTypeValidator:
     def test_validate_with_multiple_validators(self):
         """Test using same validator multiple times"""
         validator = TypeValidator(str)
-        
+
         # All should pass
         validator.validate("hello", "field1")
         validator.validate("world", "field2")
-        
+
         # Should fail
         with pytest.raises(ValidationError):
             validator.validate(123, "field3")

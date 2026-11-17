@@ -3,14 +3,16 @@
 from typing import Any, Optional
 
 from .base_validator import Validator
-from .validation_error import ValidationError
 from .enums import ErrorCode
+from .validation_error import ValidationError
 
 
 class RangeValidator(Validator):
     """Validates numeric values are within range"""
 
-    def __init__(self, min_value: Optional[float] = None, max_value: Optional[float] = None):
+    def __init__(
+        self, min_value: Optional[float] = None, max_value: Optional[float] = None
+    ):
         self.min_value = min_value
         self.max_value = max_value
 
@@ -23,7 +25,7 @@ class RangeValidator(Validator):
                 message=f"Field '{field_path}' must be numeric, got {type(value).__name__}",
                 error_code=ErrorCode.INVALID_TYPE,
                 field=field_path,
-                value=value
+                value=value,
             )
 
         if self.min_value is not None and num_value < self.min_value:
@@ -32,7 +34,7 @@ class RangeValidator(Validator):
                 error_code=ErrorCode.INVALID_RANGE,
                 field=field_path,
                 value=value,
-                context={"min": self.min_value, "max": self.max_value}
+                context={"min": self.min_value, "max": self.max_value},
             )
 
         if self.max_value is not None and num_value > self.max_value:
@@ -41,5 +43,5 @@ class RangeValidator(Validator):
                 error_code=ErrorCode.INVALID_RANGE,
                 field=field_path,
                 value=value,
-                context={"min": self.min_value, "max": self.max_value}
+                context={"min": self.min_value, "max": self.max_value},
             )

@@ -4,16 +4,19 @@ Room Daylight Factor Aggregator
 Aggregates daylight factor values from multiple windows into room polygon.
 """
 
-from typing import Dict, Optional, Tuple
-import numpy as np
 import logging
+from typing import Dict, Optional, Tuple
 
-from src.core.enums import AggregationConstants
+import numpy as np
+
 from src.components.polygon_rasterizer import PolygonRasterizer
-from src.components.window import RoomPolygon
-from src.models import SimulationData, RoomDFMatrix
+from src.components.processing.window_aggregation_orchestrator import (
+    WindowAggregationOrchestrator,
+)
 from src.components.processing.window_processor import WindowProcessor
-from src.components.processing.window_aggregation_orchestrator import WindowAggregationOrchestrator
+from src.components.window import RoomPolygon
+from src.core.enums import AggregationConstants
+from src.models import RoomDFMatrix, SimulationData
 
 logger = logging.getLogger("logger")
 
@@ -29,7 +32,7 @@ class RoomDFAggregator:
     def __init__(
         self,
         output_scale: float = AggregationConstants.DEFAULT_OUTPUT_SCALE,
-        orchestrator: Optional[WindowAggregationOrchestrator] = None
+        orchestrator: Optional[WindowAggregationOrchestrator] = None,
     ):
         """
         Initialize aggregator.
@@ -50,9 +53,7 @@ class RoomDFAggregator:
             self.orchestrator = orchestrator
 
     def aggregate(
-        self,
-        room_polygon: RoomPolygon,
-        simulations: Dict[str, SimulationData]
+        self, room_polygon: RoomPolygon, simulations: Dict[str, SimulationData]
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Aggregate DF values from multiple window simulations into room polygon.
@@ -82,7 +83,9 @@ class RoomDFAggregator:
 
         # Create room mask in image coords (Y-down).
         # PolygonRasterizer already flips Y internally, matching point_to_zero() convention.
-        room_mask = self._create_room_mask(room_translated, room_width_px, room_height_px)
+        room_mask = self._create_room_mask(
+            room_translated, room_width_px, room_height_px
+        )
         df_matrix_container.set_mask(room_mask)
 
         for window_id, sim_data in simulations.items():
@@ -93,16 +96,13 @@ class RoomDFAggregator:
         logger.info(f"All {len(simulations)} windows processed")
 
         df_matrix_container.apply_mask()
-        
+
         # Frontend maps row 0 -> minY (Y-up convention), so we flip the output.
 
-        return df_matrix_container.get_result() #.get_flipped()
+        return df_matrix_container.get_result()  # .get_flipped()
 
     def _create_room_mask(
-        self,
-        room_translated: RoomPolygon,
-        width_px: int,
-        height_px: int
+        self, room_translated: RoomPolygon, width_px: int, height_px: int
     ) -> np.ndarray:
         """
         Create room mask from translated polygon.
@@ -119,8 +119,8 @@ class RoomDFAggregator:
             Binary room mask in image coordinates (Y-down)
         """
         return self.polygon_rasterizer.rasterize(
-            room_translated.get_coords(), # type: ignore
+            room_translated.get_coords(),  # type: ignore
             width_px,
             height_px,
-            self.output_scale
+            self.output_scale,
         )

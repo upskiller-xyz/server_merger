@@ -1,11 +1,12 @@
 """Validator for simulation data (df_values and mask)"""
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 import numpy as np
 
-from ..validation_error import ValidationError
-from ..enums import ErrorCode
 from ..base_validator import Validator
+from ..enums import ErrorCode
+from ..validation_error import ValidationError
 from .enums import SimulationField
 
 
@@ -31,14 +32,14 @@ class SimulationDataValidator(Validator):
             raise ValidationError(
                 message=f"Simulation data missing '{df_field}' field",
                 error_code=ErrorCode.MISSING_FIELD,
-                field=f"{field_path}.{df_field}"
+                field=f"{field_path}.{df_field}",
             )
 
         if mask_field not in value:
             raise ValidationError(
                 message=f"Simulation data missing '{mask_field}' field",
                 error_code=ErrorCode.MISSING_FIELD,
-                field=f"{field_path}.{mask_field}"
+                field=f"{field_path}.{mask_field}",
             )
 
         # Validate df_values
@@ -47,7 +48,7 @@ class SimulationDataValidator(Validator):
             raise ValidationError(
                 message=f"Field '{df_field}' must be an array, got {type(df_values).__name__}",
                 error_code=ErrorCode.INVALID_TYPE,
-                field=f"{field_path}.{df_field}"
+                field=f"{field_path}.{df_field}",
             )
 
         df_arr = np.array(df_values)
@@ -58,7 +59,7 @@ class SimulationDataValidator(Validator):
                 message=f"Field '{df_field}' must be 2D array, got {df_arr.ndim}D with shape {df_arr.shape}",
                 error_code=ErrorCode.INVALID_DIMENSIONS,
                 field=f"{field_path}.{df_field}",
-                context={"shape": df_arr.shape}
+                context={"shape": df_arr.shape},
             )
 
         # Check square
@@ -67,7 +68,7 @@ class SimulationDataValidator(Validator):
                 message=f"Field '{df_field}' must be square array, got shape {df_arr.shape}",
                 error_code=ErrorCode.INVALID_DIMENSIONS,
                 field=f"{field_path}.{df_field}",
-                context={"shape": df_arr.shape}
+                context={"shape": df_arr.shape},
             )
 
         # Check valid size
@@ -76,7 +77,7 @@ class SimulationDataValidator(Validator):
                 message=f"Field '{df_field}' must be one of sizes {self.valid_sizes}x{self.valid_sizes}, got {df_arr.shape[0]}x{df_arr.shape[0]}",
                 error_code=ErrorCode.INVALID_DIMENSIONS,
                 field=f"{field_path}.{df_field}",
-                context={"shape": df_arr.shape, "valid_sizes": self.valid_sizes}
+                context={"shape": df_arr.shape, "valid_sizes": self.valid_sizes},
             )
 
         # Validate mask
@@ -85,7 +86,7 @@ class SimulationDataValidator(Validator):
             raise ValidationError(
                 message=f"Field '{mask_field}' must be an array, got {type(mask).__name__}",
                 error_code=ErrorCode.INVALID_TYPE,
-                field=f"{field_path}.{mask_field}"
+                field=f"{field_path}.{mask_field}",
             )
 
         mask_arr = np.array(mask)
@@ -96,7 +97,7 @@ class SimulationDataValidator(Validator):
                 message=f"Field '{mask_field}' must be 2D array, got {mask_arr.ndim}D with shape {mask_arr.shape}",
                 error_code=ErrorCode.INVALID_DIMENSIONS,
                 field=f"{field_path}.{mask_field}",
-                context={"shape": mask_arr.shape}
+                context={"shape": mask_arr.shape},
             )
 
         # Warn if shapes don't match (will be resized but user should know)

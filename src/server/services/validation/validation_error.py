@@ -1,6 +1,7 @@
 """Structured validation error with detailed information"""
 
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
+
 import numpy as np
 
 from .enums import ErrorCode
@@ -24,7 +25,7 @@ class ValidationError(Exception):
         error_code: ErrorCode,
         field: Optional[str] = None,
         value: Any = None,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ):
         super().__init__(message)
         self.message = message
@@ -35,10 +36,7 @@ class ValidationError(Exception):
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
-        result = {
-            "error": self.message,
-            "error_code": self.error_code.value
-        }
+        result = {"error": self.message, "error_code": self.error_code.value}
 
         if self.field:
             result["field"] = self.field

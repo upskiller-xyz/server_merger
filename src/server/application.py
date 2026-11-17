@@ -1,25 +1,30 @@
 """Server application implementation"""
 
-from typing import Dict, Any
-from pathlib import Path
-from flask import Flask, Response, jsonify, render_template
 import logging
+from pathlib import Path
+from typing import Any, Dict
 
-from src.core.enums import ServiceName, Endpoint, HTTPStatus
+from flask import Flask, Response, jsonify, render_template
+
+from src.core.enums import Endpoint, HTTPStatus, ServiceName
 from src.core.settings import settings
 from src.server.controllers.base_controller import ServerController
+from src.server.decorators import endpoint_error_handler
 from src.server.http_policy import MEBIBYTE, HttpPolicy
+from src.server.openapi import OpenAPISpecGenerator
 from src.server.services.df_aggregation_service import DFAggregationService
 from src.server.services.validation import ValidationError
-from src.server.services.validation.request import DFAggregationRequestValidator, RequestField
-from src.server.decorators import endpoint_error_handler
-from src.server.openapi import OpenAPISpecGenerator
+from src.server.services.validation.request import (
+    DFAggregationRequestValidator,
+    RequestField,
+)
 
 logger = logging.getLogger("logger")
 
 
 class ServerConfig:
     """Server configuration constants"""
+
     DEFAULT_OUTPUT_SCALE = 0.1
 
 
@@ -50,16 +55,16 @@ class ServerApplication:
             logging.basicConfig(
                 # DEBUG logs request internals; only with DEBUG=true.
                 level=logging.DEBUG if settings.DEBUG else logging.INFO,
-                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S'
+                format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S",
             )
 
         # DF Aggregation Service
-        df_service = DFAggregationService(output_scale=ServerConfig.DEFAULT_OUTPUT_SCALE)
+        df_service = DFAggregationService(
+            output_scale=ServerConfig.DEFAULT_OUTPUT_SCALE
+        )
 
-        services = {
-            ServiceName.DF_AGGREGATION.value: df_service
-        }
+        services = {ServiceName.DF_AGGREGATION.value: df_service}
 
         # Controller
         self._controller = ServerController(services=services)
@@ -73,7 +78,9 @@ class ServerApplication:
         self._app.add_url_rule("/merge", "merge", self._aggregate_df, methods=["POST"])
 
         # Documentation endpoints
-        self._app.add_url_rule("/openapi.json", "openapi_spec", self._openapi_spec, methods=["GET"])
+        self._app.add_url_rule(
+            "/openapi.json", "openapi_spec", self._openapi_spec, methods=["GET"]
+        )
         self._app.add_url_rule("/docs", "swagger_ui", self._swagger_ui, methods=["GET"])
         self._app.add_url_rule("/redoc", "redoc", self._redoc, methods=["GET"])
 
@@ -84,7 +91,7 @@ class ServerApplication:
         Returns:
             JSON response with server status information
         """
-        return jsonify(self._controller.get_status()) # type: ignore
+        return jsonify(self._controller.get_status())  # type: ignore
 
     @endpoint_error_handler(Endpoint.MERGE)
     def _aggregate_df(self, data: Dict[str, Any]) -> tuple:
@@ -123,13 +130,13 @@ class ServerApplication:
             return jsonify(e.to_dict()), HTTPStatus.BAD_REQUEST.value
 
         # Get DF aggregation service
-        df_service = self._controller.get_service(ServiceName.DF_AGGREGATION.value) # type: ignore
+        df_service = self._controller.get_service(ServiceName.DF_AGGREGATION.value)  # type: ignore
 
         # Process request
         result = df_service.process_request(
             room_polygon=data[RequestField.ROOM_POLYGON.value],
             windows_data=data[RequestField.WINDOWS.value],
-            simulations=data[RequestField.SIMULATION.value]
+            simulations=data[RequestField.SIMULATION.value],
         )
 
         logger.info("DF aggregation successful")

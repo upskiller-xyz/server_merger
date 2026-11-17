@@ -1,13 +1,13 @@
 """Validator for complete DF aggregation request"""
 
-from typing import Dict, Any
+from typing import Any, Dict
 
-from ..validation_error import ValidationError
 from ..enums import ErrorCode
-from .room_polygon_validator import RoomPolygonValidator
-from .window_geometry_validator import WindowGeometryValidator
-from .simulation_data_validator import SimulationDataValidator
+from ..validation_error import ValidationError
 from .enums import RequestField
+from .room_polygon_validator import RoomPolygonValidator
+from .simulation_data_validator import SimulationDataValidator
+from .window_geometry_validator import WindowGeometryValidator
 
 
 class DFAggregationRequestValidator:
@@ -39,7 +39,7 @@ class DFAggregationRequestValidator:
                 raise ValidationError(
                     message=f"Missing required field: {field}",
                     error_code=ErrorCode.MISSING_FIELD,
-                    field=field
+                    field=field,
                 )
 
         # Validate room polygon
@@ -52,7 +52,7 @@ class DFAggregationRequestValidator:
             raise ValidationError(
                 message="Windows dictionary cannot be empty",
                 error_code=ErrorCode.EMPTY_DATA,
-                field=windows_field
+                field=windows_field,
             )
 
         # Validate each window
@@ -61,7 +61,7 @@ class DFAggregationRequestValidator:
                 raise ValidationError(
                     message=f"Window '{window_id}' data must be a dictionary, got {type(window_data).__name__}",
                     error_code=ErrorCode.INVALID_TYPE,
-                    field=f"{windows_field}.{window_id}"
+                    field=f"{windows_field}.{window_id}",
                 )
             self.window_validator.validate(window_data, f"{windows_field}.{window_id}")
 
@@ -71,7 +71,7 @@ class DFAggregationRequestValidator:
             raise ValidationError(
                 message="Simulation dictionary cannot be empty",
                 error_code=ErrorCode.EMPTY_DATA,
-                field=simulation_field
+                field=simulation_field,
             )
 
         # Validate each simulation
@@ -80,9 +80,11 @@ class DFAggregationRequestValidator:
                 raise ValidationError(
                     message=f"Simulation '{window_id}' data must be a dictionary, got {type(sim_data).__name__}",
                     error_code=ErrorCode.INVALID_TYPE,
-                    field=f"{simulation_field}.{window_id}"
+                    field=f"{simulation_field}.{window_id}",
                 )
-            self.simulation_validator.validate(sim_data, f"{simulation_field}.{window_id}")
+            self.simulation_validator.validate(
+                sim_data, f"{simulation_field}.{window_id}"
+            )
 
         # Validate window IDs match between windows and simulations
         window_ids = set(data[windows_field].keys())
@@ -97,7 +99,7 @@ class DFAggregationRequestValidator:
                     message=f"Windows defined but missing simulation data: {', '.join(missing_in_simulation)}",
                     error_code=ErrorCode.MISSING_FIELD,
                     field=simulation_field,
-                    context={"missing_window_ids": list(missing_in_simulation)}
+                    context={"missing_window_ids": list(missing_in_simulation)},
                 )
 
             if missing_in_windows:
@@ -105,5 +107,5 @@ class DFAggregationRequestValidator:
                     message=f"Simulation data provided but window not defined: {', '.join(missing_in_windows)}",
                     error_code=ErrorCode.MISSING_FIELD,
                     field=windows_field,
-                    context={"missing_window_ids": list(missing_in_windows)}
+                    context={"missing_window_ids": list(missing_in_windows)},
                 )

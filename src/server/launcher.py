@@ -1,8 +1,8 @@
 """Server launcher for starting the Flask application"""
 
 import logging
-from src.server.application import ServerApplication
 
+from src.server.application import ServerApplication
 
 logger = logging.getLogger("logger")
 
@@ -25,7 +25,7 @@ class ServerLauncher:
         app: ServerApplication,
         host: str = "0.0.0.0",
         port: int = 8084,
-        debug: bool = False
+        debug: bool = False,
     ) -> None:
         """
         Run the Flask development server.

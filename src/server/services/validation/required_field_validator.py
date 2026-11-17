@@ -1,10 +1,10 @@
 """Validator for required fields"""
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from .base_validator import Validator
-from .validation_error import ValidationError
 from .enums import ErrorCode
+from .validation_error import ValidationError
 
 
 class RequiredFieldValidator(Validator):
@@ -20,5 +20,5 @@ class RequiredFieldValidator(Validator):
                 raise ValidationError(
                     message=f"Missing required field: {field}",
                     error_code=ErrorCode.MISSING_FIELD,
-                    field=f"{field_path}.{field}" if field_path else field
+                    field=f"{field_path}.{field}" if field_path else field,
                 )

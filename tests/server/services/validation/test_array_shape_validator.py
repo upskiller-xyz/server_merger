@@ -1,10 +1,11 @@
 """Tests for ArrayShapeValidator"""
 
-import pytest
 import numpy as np
+import pytest
+
 from src.server.services.validation.array_shape_validator import ArrayShapeValidator
-from src.server.services.validation.validation_error import ValidationError
 from src.server.services.validation.enums import ErrorCode
+from src.server.services.validation.validation_error import ValidationError
 
 
 class TestArrayShapeValidator:
@@ -48,7 +49,7 @@ class TestArrayShapeValidator:
         validator = ArrayShapeValidator(expected_ndim=2)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate([1, 2, 3], "image")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.INVALID_DIMENSIONS
         assert "2D" in error.message
@@ -59,7 +60,7 @@ class TestArrayShapeValidator:
         arr = np.ones((10, 20, 30))
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(arr, "image")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.INVALID_DIMENSIONS
 
@@ -68,7 +69,7 @@ class TestArrayShapeValidator:
         validator = ArrayShapeValidator(expected_ndim=1)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate("not an array", "field")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.INVALID_TYPE
 
@@ -81,8 +82,7 @@ class TestArrayShapeValidator:
     def test_validate_with_valid_shapes(self):
         """Test validation passes when shape is in valid_shapes"""
         validator = ArrayShapeValidator(
-            expected_ndim=2,
-            valid_shapes=[(128, 128), (256, 256)]
+            expected_ndim=2, valid_shapes=[(128, 128), (256, 256)]
         )
         # Should not raise
         validator.validate(np.ones((128, 128)), "image")
@@ -90,8 +90,7 @@ class TestArrayShapeValidator:
     def test_validate_with_valid_shapes_second_option(self):
         """Test validation passes for second valid shape"""
         validator = ArrayShapeValidator(
-            expected_ndim=2,
-            valid_shapes=[(128, 128), (256, 256)]
+            expected_ndim=2, valid_shapes=[(128, 128), (256, 256)]
         )
         # Should not raise
         validator.validate(np.ones((256, 256)), "image")
@@ -99,12 +98,11 @@ class TestArrayShapeValidator:
     def test_validate_with_invalid_shape(self):
         """Test validation fails when shape not in valid_shapes"""
         validator = ArrayShapeValidator(
-            expected_ndim=2,
-            valid_shapes=[(128, 128), (256, 256)]
+            expected_ndim=2, valid_shapes=[(128, 128), (256, 256)]
         )
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(np.ones((64, 64)), "image")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.INVALID_DIMENSIONS
         assert "invalid shape" in error.message.lower()
@@ -112,8 +110,7 @@ class TestArrayShapeValidator:
     def test_validate_with_valid_shapes_1d(self):
         """Test validation with 1D valid shapes"""
         validator = ArrayShapeValidator(
-            expected_ndim=1,
-            valid_shapes=[(100,), (200,), (300,)]
+            expected_ndim=1, valid_shapes=[(100,), (200,), (300,)]
         )
         # Should not raise
         validator.validate(np.ones(100), "vector")
@@ -121,8 +118,7 @@ class TestArrayShapeValidator:
     def test_validate_with_valid_shapes_wrong_size(self):
         """Test validation fails for wrong 1D size"""
         validator = ArrayShapeValidator(
-            expected_ndim=1,
-            valid_shapes=[(100,), (200,), (300,)]
+            expected_ndim=1, valid_shapes=[(100,), (200,), (300,)]
         )
         with pytest.raises(ValidationError):
             validator.validate(np.ones(150), "vector")
@@ -132,7 +128,7 @@ class TestArrayShapeValidator:
         validator = ArrayShapeValidator(expected_ndim=2)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate([1, 2, 3], "room.image")
-        
+
         error = exc_info.value
         assert error.field == "room.image"
 
@@ -141,19 +137,18 @@ class TestArrayShapeValidator:
         validator = ArrayShapeValidator(expected_ndim=2)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate([1, 2, 3], "field")
-        
+
         error = exc_info.value
         assert "shape" in error.context
 
     def test_context_includes_valid_shapes(self):
         """Test error context includes valid_shapes"""
         validator = ArrayShapeValidator(
-            expected_ndim=2,
-            valid_shapes=[(128, 128), (256, 256)]
+            expected_ndim=2, valid_shapes=[(128, 128), (256, 256)]
         )
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(np.ones((64, 64)), "image")
-        
+
         error = exc_info.value
         assert "valid_shapes" in error.context
 

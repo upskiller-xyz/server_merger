@@ -5,6 +5,7 @@ from enum import Enum
 
 class ErrorCode(Enum):
     """Error codes for different validation failures"""
+
     MISSING_FIELD = "missing_field"
     INVALID_TYPE = "invalid_type"
     INVALID_VALUE = "invalid_value"

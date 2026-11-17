@@ -2,11 +2,13 @@
 Pytest configuration and shared fixtures for the test suite.
 """
 
-import pytest
-import numpy as np
 from pathlib import Path
-from src.components.window import WindowGeometry, RoomPolygon
+
+import numpy as np
+import pytest
+
 from src.components.geometry_ops import Point2D
+from src.components.window import RoomPolygon, WindowGeometry
 from src.models import SimulationData
 from src.models.image_scale import ImageScale
 
@@ -43,25 +45,14 @@ def sample_large_mask():
 def sample_window():
     """Create a sample window geometry."""
     return WindowGeometry(
-        x1=0.0,
-        y1=1.0,
-        z1=0.0,
-        x2=0.4,
-        y2=3.8,
-        z2=2.0,
-        direction_angle=0.0
+        x1=0.0, y1=1.0, z1=0.0, x2=0.4, y2=3.8, z2=2.0, direction_angle=0.0
     )
 
 
 @pytest.fixture
 def sample_room_polygon():
     """Create a sample room polygon."""
-    coords = [
-        (0.0, 0.0),
-        (10.0, 0.0),
-        (10.0, 10.0),
-        (0.0, 10.0)
-    ]
+    coords = [(0.0, 0.0), (10.0, 0.0), (10.0, 10.0), (0.0, 10.0)]
     return RoomPolygon(coords)
 
 
@@ -72,13 +63,15 @@ def sample_image_scale():
 
 
 @pytest.fixture
-def sample_simulation_data(sample_window, sample_large_df_values, sample_large_mask, sample_image_scale):
+def sample_simulation_data(
+    sample_window, sample_large_df_values, sample_large_mask, sample_image_scale
+):
     """Create sample simulation data."""
     return SimulationData(
         window=sample_window,
         df_values=sample_large_df_values,
         mask=sample_large_mask,
-        scale=sample_image_scale
+        scale=sample_image_scale,
     )
 
 

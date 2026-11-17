@@ -1,10 +1,13 @@
 """Tests for NonEmptyValidator and RequiredFieldValidator"""
 
 import pytest
-from src.server.services.validation.non_empty_validator import NonEmptyValidator
-from src.server.services.validation.required_field_validator import RequiredFieldValidator
-from src.server.services.validation.validation_error import ValidationError
+
 from src.server.services.validation.enums import ErrorCode
+from src.server.services.validation.non_empty_validator import NonEmptyValidator
+from src.server.services.validation.required_field_validator import (
+    RequiredFieldValidator,
+)
+from src.server.services.validation.validation_error import ValidationError
 
 
 class TestNonEmptyValidator:
@@ -33,7 +36,7 @@ class TestNonEmptyValidator:
         validator = NonEmptyValidator()
         with pytest.raises(ValidationError) as exc_info:
             validator.validate([], "field")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.EMPTY_DATA
 
@@ -72,7 +75,7 @@ class TestNonEmptyValidator:
         validator = NonEmptyValidator()
         with pytest.raises(ValidationError) as exc_info:
             validator.validate([], "windows")
-        
+
         error = exc_info.value
         assert "windows" in error.message
 
@@ -100,7 +103,7 @@ class TestRequiredFieldValidator:
         data = {"x": 1, "z": 3}  # Missing y
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(data, "point")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.MISSING_FIELD
         assert "y" in error.message
@@ -111,7 +114,7 @@ class TestRequiredFieldValidator:
         data = {"x": 1}  # Missing y and z
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(data, "point")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.MISSING_FIELD
 
@@ -133,7 +136,7 @@ class TestRequiredFieldValidator:
         validator = RequiredFieldValidator(["name"])
         with pytest.raises(ValidationError) as exc_info:
             validator.validate({}, "window.properties")
-        
+
         error = exc_info.value
         assert "window.properties.name" in error.field
 
@@ -142,7 +145,7 @@ class TestRequiredFieldValidator:
         validator = RequiredFieldValidator(["name"])
         with pytest.raises(ValidationError) as exc_info:
             validator.validate({}, "")
-        
+
         error = exc_info.value
         assert error.field == "name"
 
@@ -179,6 +182,6 @@ class TestRequiredFieldValidator:
         validator = RequiredFieldValidator(["required_field"])
         with pytest.raises(ValidationError) as exc_info:
             validator.validate({}, "")
-        
+
         error = exc_info.value
         assert "required_field" in error.message

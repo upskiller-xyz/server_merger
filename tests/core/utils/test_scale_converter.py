@@ -1,9 +1,10 @@
 """Tests for scale converter utilities."""
 
-import pytest
 import numpy as np
-from src.core.utils.scale_converter import ScaleConverter
+import pytest
+
 from src.components.geometry_ops import Point2D
+from src.core.utils.scale_converter import ScaleConverter
 
 
 class TestScaleConverter:
