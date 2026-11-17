@@ -204,9 +204,11 @@ SCW_IMAGE=server_template
 #### Docker Deployment
 Build and run using Docker:
 ```sh
-docker build -t model-server .
-docker run -p 8000:8000 model-server
+docker build -t merger-server .
+docker run -p 8084:8084 merger-server
 ```
+
+The image is built on [Project Hummingbird](https://gitlab.com/redhat/hummingbird/containers) (Red Hat hardened, distroless Python 3.14): a builder stage creates the venv, and the runtime image has no shell or package manager and runs as UID 65532. Both base images are pinned by digest. Only `/tmp` is writable, so `SAVE_IMAGES` dumps go to `/tmp/outputs` (`IMAGES_OUTPUT_DIR`) unless a writable volume is mounted.
 
 #### Cloud Deployment
 Deploy to Google Cloud Platform:

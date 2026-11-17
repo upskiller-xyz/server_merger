@@ -1,63 +1,46 @@
+# Merger image on Project Hummingbird (Red Hat hardened, distroless Python).
+#
+# Two stages: the -builder image (has pip and a shell) builds a venv, and the
+# distroless runtime image (no shell, no package manager, runs as UID 65532)
+# only receives the venv and the source. Both are pinned by index digest
+# (multi-arch); Dependabot bumps them, or bump tag and digest together:
+#   docker buildx imagetools inspect registry.access.redhat.com/hi/python:3.14
+#
+# No OS packages are installed: opencv-python-headless (no libGL/X11 needed),
+# numpy and shapely ship manylinux wheels that bundle their native libraries.
 
-# Base image pinned by digest (reproducible, tamper-evident); Dependabot bumps it.
-FROM python:3.14-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
+FROM registry.access.redhat.com/hi/python:3.14-builder@sha256:b7ae4033035309fb6e1c6e9d2efa3b7d53bee243fdafe3ca13da4c782110ce54 AS build
 
-# Use .dockerignore to exclude unnecessary files (e.g. .git, tests, docs, assets, etc.)
+# The builder image runs as 65532 too; installing into /opt needs root.
+USER 0
+RUN python3 -m venv /opt/venv
+COPY requirements.txt /tmp/requirements.txt
+# pip is only needed to build the venv; removing it keeps it (and its CVEs)
+# out of the runtime image.
+RUN /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt \
+    && /opt/venv/bin/pip uninstall -y pip
 
-# Copy only requirements.txt and main files to root
-COPY requirements.txt ./
+FROM registry.access.redhat.com/hi/python:3.14@sha256:1ac4921724237d985a35cc23bbcd779fd5b984089e039182bf8e22cd108490d6
 
-# Copy only necessary source files to /src
+COPY --from=build /opt/venv /opt/venv
+# Copied as root-owned files, so the runtime user cannot modify them.
+COPY requirements.txt /requirements.txt
 COPY src/ /src/
 
 WORKDIR /src
 
-# Runtime libraries for opencv-python (non-headless): libGL and glib/gthread are
-# loaded on `import cv2`; the X11 libs back its bundled Qt plugin. Runtime
-# libxrender1 instead of libxrender-dev: no headers are needed (wheels only).
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1 \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender1 \
-    && rm -rf /var/lib/apt/lists/*
+# PORT is read by gunicorn itself (no --bind: it binds 0.0.0.0:$PORT), so the
+# platform can still override it without a shell to expand $PORT.
+# Only /tmp is writable for UID 65532: SAVE_IMAGES/DEBUG image dumps go to
+# /tmp/outputs unless IMAGES_OUTPUT_DIR points at a mounted writable volume.
+ENV PATH=/opt/venv/bin:$PATH \
+    PORT=8084 \
+    PYTHONUNBUFFERED=1 \
+    IMAGES_OUTPUT_DIR=/tmp/outputs
 
-# Pinned build-tooling versions keep the image reproducible; override with
-# --build-arg if a newer patched release is needed. These pins clear the
-# pip / setuptools / wheel CVE scan findings (setuptools 83 also vendors the
-# patched jaraco.context 6.1 + wheel 0.46.3 under setuptools/_vendor/).
-ARG PIP_VERSION=26.2.1
-ARG SETUPTOOLS_VERSION=83.0.0
-ARG WHEEL_VERSION=0.47.0
-# Upgrade build tooling, then purge the vulnerable bundled .whl the base image
-# ships: the scoped find deletes the ensurepip _bundled wheels (old pip/
-# setuptools/wheel that scanners flag), plus the pip cache. Scoped to
-# /usr/local/lib on purpose (no full-filesystem scan). The block ends in
-# `true`, so this best-effort cleanup never fails the build; the pip upgrade
-# stays &&-gated so a failed upgrade still does.
-RUN pip install --no-cache-dir --upgrade "pip==${PIP_VERSION}" "setuptools==${SETUPTOOLS_VERSION}" "wheel==${WHEEL_VERSION}" \
-    && { \
-        find /usr/local/lib -type d -name "_bundled" -path "*ensurepip*" -exec rm -rf {} + 2>/dev/null; \
-        rm -rf /root/.cache/pip; \
-        true; \
-    }
+# The image default (65532), stated explicitly so a base-image change cannot
+# silently make the service run as root.
+USER 65532
 
-RUN pip install --no-cache-dir -r /requirements.txt
-
-RUN chmod 444 main.py
-RUN chmod 444 /requirements.txt
-
-# Unprivileged runtime user (no shell, no home). SAVE_IMAGES/DEBUG image dumps
-# need a writable volume mounted at IMAGES_OUTPUT_DIR when enabled.
-RUN groupadd --system --gid 10001 app \
-    && useradd --system --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
-USER app
-
-ENV PORT 8084
-
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 900 main:app
-
-
-# Run the application
-# CMD ["python", "main.py"]
+EXPOSE 8084
+CMD ["gunicorn", "--workers", "1", "--threads", "8", "--timeout", "900", "main:app"]
