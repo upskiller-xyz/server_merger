@@ -145,7 +145,7 @@ Test dependencies:
 - pytest >= 8.0
 - pytest-cov >= 4.0
 - numpy >= 1.20
-- opencv-python >= 4.5
+- opencv-python-headless >= 4.5
 
 Install with:
 ```bash
