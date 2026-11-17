@@ -1,6 +1,6 @@
 
 # Base image pinned by digest (reproducible, tamper-evident); Dependabot bumps it.
-FROM python:3.12@sha256:4d1caded1f729ae443eb803f26ffde7b61e696aeaef62f099abb6dd6b14257c7
+FROM python:3.14-slim@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
 
 # Use .dockerignore to exclude unnecessary files (e.g. .git, tests, docs, assets, etc.)
 
@@ -12,13 +12,22 @@ COPY src/ /src/
 
 WORKDIR /src
 
-RUN apt-get update && apt-get install -y libgl1 libglib2.0-0 libsm6 libxext6 libxrender-dev
+# Runtime libraries for opencv-python (non-headless): libGL and glib/gthread are
+# loaded on `import cv2`; the X11 libs back its bundled Qt plugin. Runtime
+# libxrender1 instead of libxrender-dev: no headers are needed (wheels only).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Pinned build-tooling versions keep the image reproducible; override with
 # --build-arg if a newer patched release is needed. These pins clear the
 # pip / setuptools / wheel CVE scan findings (setuptools 83 also vendors the
 # patched jaraco.context 6.1 + wheel 0.46.3 under setuptools/_vendor/).
-ARG PIP_VERSION=26.1.2
+ARG PIP_VERSION=26.2.1
 ARG SETUPTOOLS_VERSION=83.0.0
 ARG WHEEL_VERSION=0.47.0
 # Upgrade build tooling, then purge the vulnerable bundled .whl the base image

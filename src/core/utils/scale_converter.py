@@ -30,7 +30,8 @@ class ScaleConverter:
         Returns:
             Distance in pixels (rounded)
         """
-        return int(np.round(meters / self.meters_per_pixel))
+        # float() keeps the float64 division numpy 1.x used for float32 inputs (NEP 50)
+        return int(np.round(float(meters) / self.meters_per_pixel))
 
     def point_meters_to_pixels(self, point: Point2D) -> Point2D:
         """
@@ -42,9 +43,10 @@ class ScaleConverter:
         Returns:
             Point in pixels
         """
+        # float() keeps the float64 division numpy 1.x used for float32 inputs (NEP 50)
         return Point2D(
-            np.round(point.x / self.meters_per_pixel) ,
-            np.round(point.y / self.meters_per_pixel) 
+            np.round(float(point.x) / self.meters_per_pixel) ,
+            np.round(float(point.y) / self.meters_per_pixel) 
         )
 
     def pixels_to_meters(self, pixels: int) -> float:
