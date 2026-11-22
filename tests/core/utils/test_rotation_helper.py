@@ -1,8 +1,10 @@
 """Tests for rotation helper utilities."""
 
-import pytest
-import numpy as np
 import math
+
+import numpy as np
+import pytest
+
 from src.core.utils.rotation_helper import RotationHelper
 
 
@@ -27,7 +29,7 @@ class TestRotationHelper:
         point = (64, 64)
         rotation_matrix = RotationHelper.get_rotation_matrix(0.0, (64, 64))
         rotated = RotationHelper.rotate_point(point, rotation_matrix)
-        
+
         # With zero rotation, point should remain approximately the same
         assert isinstance(rotated, tuple)
         assert len(rotated) == 2
@@ -38,7 +40,7 @@ class TestRotationHelper:
         rotation_matrix = RotationHelper.get_rotation_matrix(90.0, center)
         point = (80, 64)  # Point to the right of center
         rotated = RotationHelper.rotate_point(point, rotation_matrix)
-        
+
         # After 90 degree counterclockwise rotation around (64,64):
         # (80, 64) should become approximately (64, 80)
         assert isinstance(rotated, tuple)
@@ -47,16 +49,20 @@ class TestRotationHelper:
     def test_rotate_image_shape(self, sample_df_values):
         """Test that rotated image maintains shape."""
         rotation_matrix = RotationHelper.get_rotation_matrix(45.0, (64, 64))
-        rotated = RotationHelper.rotate_image(sample_df_values, rotation_matrix, (128, 128))
-        
+        rotated = RotationHelper.rotate_image(
+            sample_df_values, rotation_matrix, (128, 128)
+        )
+
         assert rotated.shape == sample_df_values.shape
         assert rotated.dtype == sample_df_values.dtype
 
     def test_rotate_image_zero_rotation(self, sample_df_values):
         """Test that zero rotation doesn't significantly change image."""
         rotation_matrix = RotationHelper.get_rotation_matrix(0.0, (64, 64))
-        rotated = RotationHelper.rotate_image(sample_df_values, rotation_matrix, (128, 128))
-        
+        rotated = RotationHelper.rotate_image(
+            sample_df_values, rotation_matrix, (128, 128)
+        )
+
         # With zero rotation, images should be very similar
         assert rotated.shape == sample_df_values.shape
 
@@ -64,9 +70,7 @@ class TestRotationHelper:
         """Test rotating a mask image."""
         rotation_matrix = RotationHelper.get_rotation_matrix(30.0, (64, 64))
         rotated_mask = RotationHelper.rotate_image(
-            sample_mask.astype(np.uint8),
-            rotation_matrix,
-            (128, 128)
+            sample_mask.astype(np.uint8), rotation_matrix, (128, 128)
         )
-        
+
         assert rotated_mask.shape == sample_mask.shape

@@ -6,6 +6,7 @@ from dataclasses import dataclass
 @dataclass
 class Region:
     """Defines a rectangular region with bounds"""
+
     y_start: int
     y_end: int
     x_start: int
@@ -25,6 +26,7 @@ class Region:
 @dataclass
 class OverlapRegion:
     """Defines source and destination regions for overlap calculations"""
+
     src: Region
     dest: Region
 

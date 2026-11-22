@@ -1,6 +1,6 @@
 """Service for validating complete request payloads"""
 
-from typing import Dict, Any, Callable
+from typing import Any, Callable, Dict
 
 from .validation_error import ValidationError
 

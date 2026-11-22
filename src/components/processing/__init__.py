@@ -1,15 +1,17 @@
 """Processing components and pipelines"""
 
 from src.components.processing.context import (
-    WindowInputData,
+    CropData,
     ImagePair,
     PositionData,
-    CropData,
+    WindowInputData,
     WindowProcessingContext,
 )
 from src.components.processing.pipeline import WindowProcessingPipeline
+from src.components.processing.window_aggregation_orchestrator import (
+    WindowAggregationOrchestrator,
+)
 from src.components.processing.window_processor import WindowProcessor
-from src.components.processing.window_aggregation_orchestrator import WindowAggregationOrchestrator
 
 __all__ = [
     "WindowInputData",

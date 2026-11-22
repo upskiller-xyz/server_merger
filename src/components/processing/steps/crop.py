@@ -2,7 +2,11 @@
 
 import logging
 
-from src.components.processing.context import WindowProcessingContext, ImagePair, CropData
+from src.components.processing.context import (
+    CropData,
+    ImagePair,
+    WindowProcessingContext,
+)
 from src.components.processing.steps.base import ProcessingStep
 from src.components.processing.window_processor import WindowProcessor
 
@@ -18,20 +22,21 @@ class CropWindowStep(ProcessingStep):
 
     def run(self, context: WindowProcessingContext) -> WindowProcessingContext:
         """Crop to mask bounds"""
-        logger.debug(f"Step 4: Cropping window '{context.input.window_id}' to visible bounds")
-        
+        logger.debug(
+            f"Step 4: Cropping window '{context.input.window_id}' to visible bounds"
+        )
+
         df_cropped, mask_cropped, crop_offset = (
             self.window_processor.crop_to_visible_bounds(
                 context.original_images.df_values,
                 context.original_images.mask,
-                context.input.window_id
+                context.input.window_id,
             )
         )
 
         context.original_images = ImagePair(df_cropped, mask_cropped)
         context.cropped = CropData(
-            images=ImagePair(df_cropped, mask_cropped),
-            offset=crop_offset
+            images=ImagePair(df_cropped, mask_cropped), offset=crop_offset
         )
 
         return context

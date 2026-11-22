@@ -1,10 +1,8 @@
 """Tests for core exception classes."""
 
 import pytest
-from src.core.exceptions import (
-    MissingPositionError,
-    WindowOrientationError
-)
+
+from src.core.exceptions import MissingPositionError, WindowOrientationError
 
 
 class TestMissingPositionError:

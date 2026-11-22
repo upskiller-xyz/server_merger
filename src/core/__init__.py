@@ -7,4 +7,9 @@ from src.core.exceptions import (
 )
 from src.core.settings import settings
 
-__all__ = ["settings", "ClientInputError", "MissingPositionError", "WindowOrientationError"]
+__all__ = [
+    "settings",
+    "ClientInputError",
+    "MissingPositionError",
+    "WindowOrientationError",
+]

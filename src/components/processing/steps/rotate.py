@@ -2,7 +2,7 @@
 
 import logging
 
-from src.components.processing.context import WindowProcessingContext, ImagePair
+from src.components.processing.context import ImagePair, WindowProcessingContext
 from src.components.processing.steps.base import ProcessingStep
 from src.components.processing.window_processor import WindowProcessor
 from src.core.exceptions import MissingPositionError
@@ -21,10 +21,16 @@ class RotateWindowStep(ProcessingStep):
         """Apply rotation transformation"""
         logger.debug(f"Step 3: Rotating window '{context.input.window_id}'")
 
-        rotation_angle = context.input.window.direction_angle if context.input.window.direction_angle is not None else 0
+        rotation_angle = (
+            context.input.window.direction_angle
+            if context.input.window.direction_angle is not None
+            else 0
+        )
 
         if context.position is None:
-            raise MissingPositionError(f"Position context is None for window '{context.input.window_id}'")
+            raise MissingPositionError(
+                f"Position context is None for window '{context.input.window_id}'"
+            )
 
         df_rotated, mask_rotated, ref_px_rotated = (
             self.window_processor.rotate_window_images(
@@ -32,7 +38,7 @@ class RotateWindowStep(ProcessingStep):
                 context.original_images.mask,
                 context.position.ref_px_original,
                 rotation_angle,
-                context.input.window_id
+                context.input.window_id,
             )
         )
 

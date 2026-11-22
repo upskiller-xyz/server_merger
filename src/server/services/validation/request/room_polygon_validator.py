@@ -1,11 +1,12 @@
 """Validator for room polygon structure"""
 
 from typing import Any
+
 import numpy as np
 
-from ..validation_error import ValidationError
-from ..enums import ErrorCode
 from ..base_validator import Validator
+from ..enums import ErrorCode
+from ..validation_error import ValidationError
 
 
 class RoomPolygonValidator(Validator):
@@ -26,7 +27,7 @@ class RoomPolygonValidator(Validator):
             raise ValidationError(
                 message=f"Room polygon must be an array, got {type(value).__name__}",
                 error_code=ErrorCode.INVALID_TYPE,
-                field=field_path
+                field=field_path,
             )
 
         polygon = np.array(value)
@@ -37,7 +38,10 @@ class RoomPolygonValidator(Validator):
                 message=f"Room polygon must have at least {self.min_vertices} vertices, got {len(polygon)}",
                 error_code=ErrorCode.INVALID_VALUE,
                 field=field_path,
-                context={"vertex_count": len(polygon), "min_vertices": self.min_vertices}
+                context={
+                    "vertex_count": len(polygon),
+                    "min_vertices": self.min_vertices,
+                },
             )
 
         # Check each vertex is [x, y]
@@ -49,7 +53,7 @@ class RoomPolygonValidator(Validator):
                     message=f"Room polygon vertex {i} is invalid: {e}",
                     error_code=ErrorCode.INVALID_VALUE,
                     field=f"{field_path}[{i}]",
-                    value=str(vertex)
+                    value=str(vertex),
                 )
 
             if not isinstance(vertex, (list, tuple, np.ndarray)) or len(vertex) != 2:
@@ -57,7 +61,7 @@ class RoomPolygonValidator(Validator):
                     message=f"Room polygon vertex {i} must be [x, y] coordinate pair (2D), got {len(vertex)} dimensions",
                     error_code=ErrorCode.INVALID_VALUE,
                     field=f"{field_path}[{i}]",
-                    value=str(vertex)
+                    value=str(vertex),
                 )
 
             # Check both coordinates are numeric
@@ -69,5 +73,5 @@ class RoomPolygonValidator(Validator):
                     message=f"Room polygon vertex {i} coordinates must be numeric, got {vertex}",
                     error_code=ErrorCode.INVALID_TYPE,
                     field=f"{field_path}[{i}]",
-                    value=vertex
+                    value=vertex,
                 )

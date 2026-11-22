@@ -155,17 +155,21 @@ data = {
     "room_polygon": [[0, 0], [3, 0], [3, 4], [0, 4]],
     "windows": {
         "window_1": {
-            "x1": 0.0, "y1": 0.0, "z1": 1.0,
-            "x2": 1.5, "y2": 0.3, "z2": 2.5,
-            "direction_angle": 0.0
+            "x1": 0.0,
+            "y1": 0.0,
+            "z1": 1.0,
+            "x2": 1.5,
+            "y2": 0.3,
+            "z2": 2.5,
+            "direction_angle": 0.0,
         }
     },
     "simulations": {
         "window_1": {
             "df_values": [[...]],  # 2D array of DF values
-            "mask": [[...]]        # 2D binary mask
+            "mask": [[...]],  # 2D binary mask
         }
-    }
+    },
 }
 
 response = requests.post("http://localhost:8000/merge", json=data)

@@ -1,11 +1,11 @@
 """Decorator for validating request parameters"""
 
-from typing import Dict, Any, Callable
 from functools import wraps
+from typing import Any, Callable, Dict
 
-from .validation_error import ValidationError
 from .enums import ErrorCode
 from .required_field_validator import RequiredFieldValidator
+from .validation_error import ValidationError
 
 
 def validate_request(validation_schema: Dict[str, Any]) -> Callable:
@@ -34,6 +34,7 @@ def validate_request(validation_schema: Dict[str, Any]) -> Callable:
         def my_endpoint(data):
             ...
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -41,7 +42,7 @@ def validate_request(validation_schema: Dict[str, Any]) -> Callable:
             if args and len(args) > 1:
                 data = args[1] if isinstance(args[0], object) else args[0]
             else:
-                data = kwargs.get('data')
+                data = kwargs.get("data")
 
             if data:
                 try:
@@ -50,7 +51,9 @@ def validate_request(validation_schema: Dict[str, Any]) -> Callable:
                     raise  # Re-raise to be caught by endpoint handler
 
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -74,7 +77,7 @@ def _validate_dict(data: Dict[str, Any], schema: Dict[str, Any], path: str) -> N
                         raise ValidationError(
                             message=f"Missing required field: {field}",
                             error_code=ErrorCode.MISSING_FIELD,
-                            field=field_path
+                            field=field_path,
                         )
             continue
 
@@ -95,9 +98,13 @@ def _validate_dict(data: Dict[str, Any], schema: Dict[str, Any], path: str) -> N
                 for key, nested_value in value.items():
                     nested_path = f"{field_path}.{key}"
                     if isinstance(wildcard_schema, dict):
-                        _validate_dict({k: nested_value.get(k) for k in wildcard_schema},
-                                     {k: {"validators": v} if isinstance(v, list) else v
-                                      for k, v in wildcard_schema.items()},
-                                     nested_path)
+                        _validate_dict(
+                            {k: nested_value.get(k) for k in wildcard_schema},
+                            {
+                                k: {"validators": v} if isinstance(v, list) else v
+                                for k, v in wildcard_schema.items()
+                            },
+                            nested_path,
+                        )
             elif isinstance(value, dict):
                 _validate_dict(value, nested_schema, field_path)

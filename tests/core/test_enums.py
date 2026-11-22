@@ -1,6 +1,7 @@
 """Tests for graphics constants and enums."""
 
 import pytest
+
 from src.core.enums import AggregationConstants
 from src.core.graphics_constants import GRAPHICS_CONSTANTS
 

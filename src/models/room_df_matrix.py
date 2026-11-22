@@ -4,15 +4,17 @@ Room DF Matrix Management
 This module provides the RoomDFMatrix class for managing the room daylight factor matrix.
 """
 
-from typing import Tuple
-import numpy as np
 import logging
+from typing import Tuple
 
-from src.core.enums import AggregationConstants
+import numpy as np
+
 from src.components.geometry_ops import Point2D
+from src.core.enums import AggregationConstants
 from src.models.overlap_region import OverlapRegion, Region
 
 logger = logging.getLogger("logger")
+
 
 class RoomDFMatrix:
     """
@@ -47,7 +49,7 @@ class RoomDFMatrix:
         df_window: np.ndarray,
         mask_window: np.ndarray,
         translation: Point2D,
-        window_id: str
+        window_id: str,
     ) -> None:
         """
         Place window contribution onto room canvas at correct position and accumulate.
@@ -73,8 +75,13 @@ class RoomDFMatrix:
             f"size={window_width}x{window_height}"
         )
 
-        if region.src_height <= AggregationConstants.ZERO_VALUE or region.src_width <= AggregationConstants.ZERO_VALUE:
-            logger.warning(f"  No valid overlap region for '{window_id}' (size: {region.src_height}x{region.src_width})")
+        if (
+            region.src_height <= AggregationConstants.ZERO_VALUE
+            or region.src_width <= AggregationConstants.ZERO_VALUE
+        ):
+            logger.warning(
+                f"  No valid overlap region for '{window_id}' (size: {region.src_height}x{region.src_width})"
+            )
             return
 
         # Crop and place window DF values
@@ -82,17 +89,17 @@ class RoomDFMatrix:
             values=df_window,
             src_region=region.src,
             dest_region=region.dest,
-            offset=Point2D(x=0, y=0)  # Already positioned by region calculation
+            offset=Point2D(x=0, y=0),  # Already positioned by region calculation
         )
-        
+
         # Crop and place window mask
         mask_placed = self.crop_and_place(
             values=mask_window,
             src_region=region.src,
             dest_region=region.dest,
-            offset=Point2D(x=0, y=0)  # Already positioned by region calculation
+            offset=Point2D(x=0, y=0),  # Already positioned by region calculation
         )
-        
+
         # Apply mask to DF values
         masked_values = df_placed * mask_placed
 
@@ -103,8 +110,8 @@ class RoomDFMatrix:
 
         # Accumulate into room matrix at destination position
         self.df_matrix[
-            region.dest.y_start:region.dest.y_end,
-            region.dest.x_start:region.dest.x_end
+            region.dest.y_start : region.dest.y_end,
+            region.dest.x_start : region.dest.x_end,
         ] += masked_values
 
     def _validate_translation(self, translation: Point2D, window_id: str) -> None:
@@ -135,11 +142,7 @@ class RoomDFMatrix:
             )
 
     def _calculate_overlap_regions(
-        self,
-        window_width: int,
-        window_height: int,
-        offset_x: int,
-        offset_y: int
+        self, window_width: int, window_height: int, offset_x: int, offset_y: int
     ) -> OverlapRegion:
         """
         Calculate overlap regions between window and room.
@@ -157,15 +160,15 @@ class RoomDFMatrix:
             y_start=AggregationConstants.ZERO_VALUE,
             y_end=min(window_height, self.height_px + offset_y),
             x_start=AggregationConstants.ZERO_VALUE,
-            x_end=min(window_width - 1, self.width_px + offset_x)
+            x_end=min(window_width - 1, self.width_px + offset_x),
         )
         dest_region = Region(
             y_start=max(AggregationConstants.ZERO_VALUE, -offset_y),
-            y_end=self.height_px, #offset_y + window_height),
+            y_end=self.height_px,  # offset_y + window_height),
             x_start=max(AggregationConstants.ZERO_VALUE, -offset_x),
-            x_end=self.width_px  #, offset_x + window_width)
+            x_end=self.width_px,  # , offset_x + window_width)
         )
-        
+
         return OverlapRegion(src=src_region, dest=dest_region)
 
     def apply_mask(self) -> None:
@@ -182,27 +185,24 @@ class RoomDFMatrix:
             (df_matrix, room_mask): Final aggregated result
         """
         return self.df_matrix, self.room_mask
-    
+
     def _flip(self, arr: np.ndarray) -> np.ndarray:
         return np.flipud(arr)
-    
+
     def get_flipped(self) -> Tuple[np.ndarray, np.ndarray]:
         return (self._flip(self.df_matrix), self._flip(self.room_mask))
 
     @staticmethod
     def crop_and_place(
-        values: np.ndarray,
-        src_region: Region,
-        dest_region: Region,
-        offset: Point2D
+        values: np.ndarray, src_region: Region, dest_region: Region, offset: Point2D
     ) -> np.ndarray:
         """
         Crop values using source region and place in output of destination region size.
-        
+
         Extracts a portion of the input array defined by src_region coordinates,
         then places it in an output array of dest_region size at the position
         specified by the offset. Areas without data are padded with zeros.
-        
+
         Args:
             values: Input array to crop from
             src_region: Region defining coordinates to crop from input array
@@ -210,32 +210,28 @@ class RoomDFMatrix:
             offset: Point2D indicating where to place the cropped data in the output.
                     Positive offset means data is offset to right/down.
                     Negative offset means data starts outside the top-left corner.
-        
+
         Returns:
             Array of shape (dest_region.height, dest_region.width) with cropped data
             placed at offset position and remaining areas zero-filled.
         """
         # Crop from source array using source region coordinates
         cropped = values[
-            src_region.y_start:src_region.y_end,
-            src_region.x_start:src_region.x_end
+            src_region.y_start : src_region.y_end, src_region.x_start : src_region.x_end
         ]
-        
+
         # Create output array with destination region size, zero-filled
-        output = np.zeros(
-            (dest_region.height, dest_region.width),
-            dtype=values.dtype
-        )
-        
+        output = np.zeros((dest_region.height, dest_region.width), dtype=values.dtype)
+
         offset_y = int(offset.y)
         offset_x = int(offset.x)
-        
+
         # Determine placement bounds in output array
         out_y_start = max(0, offset_y)
         out_x_start = max(0, offset_x)
         out_y_end = min(dest_region.height, offset_y + cropped.shape[0])
         out_x_end = min(dest_region.width, offset_x + cropped.shape[1])
-        
+
         # Check if there's any valid overlap region
         if out_y_start >= out_y_end or out_x_start >= out_x_end:
             logger.debug(
@@ -244,18 +240,17 @@ class RoomDFMatrix:
                 f"({dest_region.height}, {dest_region.width})"
             )
             return output
-        
+
         # Determine corresponding source bounds in cropped array
         # (handles case where offset is negative, clipping from cropped data)
         src_y_start = max(0, -offset_y)
         src_x_start = max(0, -offset_x)
         src_y_end = src_y_start + (out_y_end - out_y_start)
         src_x_end = src_x_start + (out_x_end - out_x_start)
-        
+
         # Place cropped data at offset position in output
         output[out_y_start:out_y_end, out_x_start:out_x_end] = cropped[
-            src_y_start:src_y_end,
-            src_x_start:src_x_end
+            src_y_start:src_y_end, src_x_start:src_x_end
         ]
-        
+
         return output

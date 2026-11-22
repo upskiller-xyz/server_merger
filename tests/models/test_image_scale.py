@@ -1,8 +1,9 @@
 """Tests for image scale model."""
 
 import pytest
-from src.models.image_scale import ImageScale
+
 from src.core.graphics_constants import GRAPHICS_CONSTANTS
+from src.models.image_scale import ImageScale
 
 
 class TestImageScale:
@@ -41,7 +42,9 @@ class TestImageScale:
         """Test creating scale from image size."""
         scale = ImageScale.from_image_size(128)
         assert scale.size == 128
-        assert scale.meters_per_pixel == pytest.approx(GRAPHICS_CONSTANTS.BASE_RESOLUTION_M_PER_PX)
+        assert scale.meters_per_pixel == pytest.approx(
+            GRAPHICS_CONSTANTS.BASE_RESOLUTION_M_PER_PX
+        )
 
     def test_image_scale_from_image_size_double(self):
         """Test from_image_size with double size."""
@@ -69,7 +72,7 @@ class TestImageScale:
         """Test that window offset scales proportionally."""
         scale_128 = ImageScale(size=128, meters_per_pixel=0.1)
         scale_256 = ImageScale(size=256, meters_per_pixel=0.05)
-        
+
         # Offset should scale with size
         ratio = scale_256.size / scale_128.size
         assert scale_256.window_offset == pytest.approx(scale_128.window_offset * ratio)
@@ -78,7 +81,9 @@ class TestImageScale:
         """Test that reference size gives reference scale."""
         scale = ImageScale.from_image_size(GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX)
         assert scale.size == GRAPHICS_CONSTANTS.BASE_IMAGE_SIZE_PX
-        assert scale.meters_per_pixel == pytest.approx(GRAPHICS_CONSTANTS.BASE_RESOLUTION_M_PER_PX)
+        assert scale.meters_per_pixel == pytest.approx(
+            GRAPHICS_CONSTANTS.BASE_RESOLUTION_M_PER_PX
+        )
 
     def test_image_scale_zero_meters_per_pixel(self):
         """Test handling of zero or very small meters_per_pixel."""

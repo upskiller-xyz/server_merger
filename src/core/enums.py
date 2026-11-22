@@ -5,6 +5,7 @@ from src.core.graphics_constants import GRAPHICS_CONSTANTS
 
 class ProcessingStep(Enum):
     """Window processing pipeline steps"""
+
     POSITION = "position"
     STANDARDIZED = "standardized"
     ROTATED = "rotated"
@@ -14,6 +15,7 @@ class ProcessingStep(Enum):
 
 class ModelType(Enum):
     """Model types for daylight prediction"""
+
     DF_DEFAULT = "df_default"
     DA_DEFAULT = "da_default"
     DF_CUSTOM = "df_custom"
@@ -22,6 +24,7 @@ class ModelType(Enum):
 
 class ChannelType(Enum):
     """RGBA channel types"""
+
     RED = "red"
     GREEN = "green"
     BLUE = "blue"
@@ -30,6 +33,7 @@ class ChannelType(Enum):
 
 class RegionType(Enum):
     """Image region types"""
+
     BACKGROUND = "background"
     ROOM = "room"
     WINDOW = "window"
@@ -42,6 +46,7 @@ class ImageDimensions:
 
     All dimensions are calculated proportionally based on image_size
     """
+
     DEFAULT_IMAGE_SIZE = 128
 
     def __init__(self, image_size: int = DEFAULT_IMAGE_SIZE):
@@ -93,6 +98,7 @@ class ImageDimensions:
 
 class ParameterName(Enum):
     """Encoding parameter names"""
+
     # Background parameters
     WINDOW_ORIENTATION = "window_orientation"
     FACADE_REFLECTANCE = "facade_reflectance"
@@ -125,8 +131,6 @@ class ParameterName(Enum):
     OBSTRUCTION_ANGLE_HORIZON = "obstruction_angle_horizon"
     CONTEXT_REFLECTANCE = "context_reflectance"
     OBSTRUCTION_ANGLE_ZENITH = "obstruction_angle_zenith"
-    
-    
 
     # Structure keys
     WINDOWS = "windows"
@@ -146,13 +150,8 @@ class ParameterName(Enum):
 # Validation map: RegionType -> List of required ParameterName values (Strategy Pattern)
 # Note: window_sill_height and window_height are auto-calculated from window geometry
 REQUIRED_PARAMETERS = {
-    RegionType.BACKGROUND: [
-        ParameterName.FLOOR_HEIGHT_ABOVE_TERRAIN
-    ],
-    RegionType.ROOM: [
-        ParameterName.HEIGHT_ROOF_OVER_FLOOR,
-        ParameterName.ROOM_POLYGON
-    ],
+    RegionType.BACKGROUND: [ParameterName.FLOOR_HEIGHT_ABOVE_TERRAIN],
+    RegionType.ROOM: [ParameterName.HEIGHT_ROOF_OVER_FLOOR, ParameterName.ROOM_POLYGON],
     RegionType.WINDOW: [
         # window_sill_height - auto-calculated from min(z1,z2) - floor_height_above_terrain
         # window_height - auto-calculated from abs(z2 - z1)
@@ -160,8 +159,8 @@ REQUIRED_PARAMETERS = {
     ],
     RegionType.OBSTRUCTION_BAR: [
         ParameterName.OBSTRUCTION_ANGLE_HORIZON,
-        ParameterName.OBSTRUCTION_ANGLE_ZENITH
-    ]
+        ParameterName.OBSTRUCTION_ANGLE_ZENITH,
+    ],
 }
 
 # Parameter categorization map: parameter name -> RegionType (Strategy Pattern)
@@ -173,7 +172,6 @@ PARAMETER_REGIONS = {
     "floor_height_above_terrain": RegionType.BACKGROUND,
     "terrain_reflectance": RegionType.BACKGROUND,
     ParameterName.WINDOW_ORIENTATION.value: RegionType.BACKGROUND,
-
     # Room parameters
     ParameterName.CEILING_REFLECTANCE.value: RegionType.ROOM,
     ParameterName.HEIGHT_ROOF_OVER_FLOOR.value: RegionType.ROOM,
@@ -183,7 +181,6 @@ PARAMETER_REGIONS = {
     ParameterName.WALL_REFLECTANCE.value: RegionType.ROOM,
     "vertical_reflectance": RegionType.ROOM,
     ParameterName.ROOM_POLYGON.value: RegionType.ROOM,
-
     # Window parameters
     ParameterName.WINDOW_FRAME_REFLECTANCE.value: RegionType.WINDOW,
     ParameterName.WINDOW_SILL_HEIGHT.value: RegionType.WINDOW,
@@ -198,19 +195,18 @@ PARAMETER_REGIONS = {
     ParameterName.Z2.value: RegionType.WINDOW,
     ParameterName.DIRECTION_ANGLE.value: RegionType.WINDOW,
     ParameterName.WALL_THICKNESS.value: RegionType.WINDOW,
-
     # Obstruction bar parameters
     ParameterName.BALCONY_REFLECTANCE.value: RegionType.OBSTRUCTION_BAR,
     ParameterName.OBSTRUCTION_ANGLE_HORIZON.value: RegionType.OBSTRUCTION_BAR,
-
     ParameterName.CONTEXT_REFLECTANCE.value: RegionType.OBSTRUCTION_BAR,
     "context_reflectance": RegionType.OBSTRUCTION_BAR,
-    ParameterName.OBSTRUCTION_ANGLE_ZENITH.value: RegionType.OBSTRUCTION_BAR
+    ParameterName.OBSTRUCTION_ANGLE_ZENITH.value: RegionType.OBSTRUCTION_BAR,
 }
 
 
 class EncoderType(str, Enum):
     """Encoder type enumeration (Enumerator Pattern)"""
+
     LINEAR = "linear"
     ANGLE = "angle"
     REFLECTANCE = "reflectance"
@@ -218,6 +214,7 @@ class EncoderType(str, Enum):
 
 class GeometryType(str, Enum):
     """Shapely geometry type enumeration (Enumerator Pattern)"""
+
     POLYGON = "Polygon"
     MULTI_POLYGON = "MultiPolygon"
     GEOMETRY_COLLECTION = "GeometryCollection"
@@ -229,6 +226,7 @@ class GeometryType(str, Enum):
 
 class EncodingScheme(str, Enum):
     """Encoding scheme enumeration for different parameter-to-channel mappings"""
+
     RGB = "rgb"
     HSV = "hsv"
 
@@ -240,22 +238,21 @@ DEFAULT_PARAMETER_VALUES = {
     ParameterName.FACADE_REFLECTANCE: 1.0,
     ParameterName.TERRAIN_REFLECTANCE: 1.0,
     ParameterName.WINDOW_ORIENTATION: 288,  # 0° = South
-
     # Room defaults
     ParameterName.FLOOR_REFLECTANCE: 1.0,
     ParameterName.WALL_REFLECTANCE: 1.0,
     ParameterName.CEILING_REFLECTANCE: 1.0,
-
     # Window defaults
     ParameterName.WINDOW_FRAME_REFLECTANCE: 0.8,
-
     # Obstruction bar defaults
     ParameterName.CONTEXT_REFLECTANCE: 0.6,
     ParameterName.BALCONY_REFLECTANCE: 0.8,
 }
 
+
 class AggregationConstants:
     """Constants for DF aggregation processing"""
+
     # Image normalization
     GRAYSCALE_MAX = 255
     BINARY_THRESHOLD = 127
@@ -288,50 +285,165 @@ class AggregationConstants:
     ZERO_VALUE = 0
 
 
-
-
 # Default pixel values for HSV encoding scheme (Strategy Pattern)
 # These override the encoded values for specific parameters when using default materials
 # Format: {(RegionType, ChannelType, ModelType): pixel_value}
 # Only specified combinations are overridden; others use normal encoding of DEFAULT_PARAMETER_VALUES
 HSV_DEFAULT_PIXEL_OVERRIDES = {
     # Background region defaults (alpha=windowOrientation, hue=facadeReflectance, sat=floorHeight, val=terrainReflectance)
-    (RegionType.BACKGROUND, ChannelType.ALPHA, ModelType.DF_DEFAULT): 190,  # window_orientation
-    (RegionType.BACKGROUND, ChannelType.ALPHA, ModelType.DF_CUSTOM): 190,   # window_orientation
-    (RegionType.BACKGROUND, ChannelType.RED, ModelType.DF_DEFAULT): 190,    # facade_reflectance (hue)
-    (RegionType.BACKGROUND, ChannelType.RED, ModelType.DA_DEFAULT): 200,    # facade_reflectance (hue)
-    (RegionType.BACKGROUND, ChannelType.BLUE, ModelType.DF_DEFAULT): 190,   # terrain_reflectance (value)
-    (RegionType.BACKGROUND, ChannelType.BLUE, ModelType.DA_DEFAULT): 200,   # terrain_reflectance (value)
-
+    (
+        RegionType.BACKGROUND,
+        ChannelType.ALPHA,
+        ModelType.DF_DEFAULT,
+    ): 190,  # window_orientation
+    (
+        RegionType.BACKGROUND,
+        ChannelType.ALPHA,
+        ModelType.DF_CUSTOM,
+    ): 190,  # window_orientation
+    (
+        RegionType.BACKGROUND,
+        ChannelType.RED,
+        ModelType.DF_DEFAULT,
+    ): 190,  # facade_reflectance (hue)
+    (
+        RegionType.BACKGROUND,
+        ChannelType.RED,
+        ModelType.DA_DEFAULT,
+    ): 200,  # facade_reflectance (hue)
+    (
+        RegionType.BACKGROUND,
+        ChannelType.BLUE,
+        ModelType.DF_DEFAULT,
+    ): 190,  # terrain_reflectance (value)
+    (
+        RegionType.BACKGROUND,
+        ChannelType.BLUE,
+        ModelType.DA_DEFAULT,
+    ): 200,  # terrain_reflectance (value)
     # Obstruction bar defaults (alpha=balconyReflectance, hue=obstructionAngleHorizon, sat=contextReflectance, val=obstructionAngleZenith)
-    (RegionType.OBSTRUCTION_BAR, ChannelType.ALPHA, ModelType.DF_DEFAULT): 210,   # balcony_reflectance
-    (RegionType.OBSTRUCTION_BAR, ChannelType.ALPHA, ModelType.DA_DEFAULT): 210,   # balcony_reflectance
-    (RegionType.OBSTRUCTION_BAR, ChannelType.ALPHA, ModelType.DF_CUSTOM): 210,    # balcony_reflectance
-    (RegionType.OBSTRUCTION_BAR, ChannelType.ALPHA, ModelType.DA_CUSTOM): 210,    # balcony_reflectance
-    (RegionType.OBSTRUCTION_BAR, ChannelType.GREEN, ModelType.DF_DEFAULT): 210,   # context_reflectance (saturation)
-    (RegionType.OBSTRUCTION_BAR, ChannelType.GREEN, ModelType.DA_DEFAULT): 210,   # context_reflectance (saturation)
-    (RegionType.OBSTRUCTION_BAR, ChannelType.GREEN, ModelType.DF_CUSTOM): 210,    # context_reflectance (saturation)
-    (RegionType.OBSTRUCTION_BAR, ChannelType.GREEN, ModelType.DA_CUSTOM): 210,    # context_reflectance (saturation)
-
+    (
+        RegionType.OBSTRUCTION_BAR,
+        ChannelType.ALPHA,
+        ModelType.DF_DEFAULT,
+    ): 210,  # balcony_reflectance
+    (
+        RegionType.OBSTRUCTION_BAR,
+        ChannelType.ALPHA,
+        ModelType.DA_DEFAULT,
+    ): 210,  # balcony_reflectance
+    (
+        RegionType.OBSTRUCTION_BAR,
+        ChannelType.ALPHA,
+        ModelType.DF_CUSTOM,
+    ): 210,  # balcony_reflectance
+    (
+        RegionType.OBSTRUCTION_BAR,
+        ChannelType.ALPHA,
+        ModelType.DA_CUSTOM,
+    ): 210,  # balcony_reflectance
+    (
+        RegionType.OBSTRUCTION_BAR,
+        ChannelType.GREEN,
+        ModelType.DF_DEFAULT,
+    ): 210,  # context_reflectance (saturation)
+    (
+        RegionType.OBSTRUCTION_BAR,
+        ChannelType.GREEN,
+        ModelType.DA_DEFAULT,
+    ): 210,  # context_reflectance (saturation)
+    (
+        RegionType.OBSTRUCTION_BAR,
+        ChannelType.GREEN,
+        ModelType.DF_CUSTOM,
+    ): 210,  # context_reflectance (saturation)
+    (
+        RegionType.OBSTRUCTION_BAR,
+        ChannelType.GREEN,
+        ModelType.DA_CUSTOM,
+    ): 210,  # context_reflectance (saturation)
     # Room defaults (alpha=ceilingReflectance, hue=heightRoofOverFloor, sat=floorReflectance, val=wallReflectance)
-    (RegionType.ROOM, ChannelType.ALPHA, ModelType.DF_DEFAULT): 220,    # ceiling_reflectance
-    (RegionType.ROOM, ChannelType.ALPHA, ModelType.DA_DEFAULT): 220,    # ceiling_reflectance
-    (RegionType.ROOM, ChannelType.ALPHA, ModelType.DF_CUSTOM): 220,     # ceiling_reflectance
-    (RegionType.ROOM, ChannelType.ALPHA, ModelType.DA_CUSTOM): 220,     # ceiling_reflectance
-    (RegionType.ROOM, ChannelType.GREEN, ModelType.DF_DEFAULT): 220,    # floor_reflectance (saturation)
-    (RegionType.ROOM, ChannelType.GREEN, ModelType.DA_DEFAULT): 220,    # floor_reflectance (saturation)
-    (RegionType.ROOM, ChannelType.GREEN, ModelType.DF_CUSTOM): 220,     # floor_reflectance (saturation)
-    (RegionType.ROOM, ChannelType.GREEN, ModelType.DA_CUSTOM): 220,     # floor_reflectance (saturation)
-    (RegionType.ROOM, ChannelType.BLUE, ModelType.DF_DEFAULT): 220,     # wall_reflectance (value)
-    (RegionType.ROOM, ChannelType.BLUE, ModelType.DA_DEFAULT): 220,     # wall_reflectance (value)
-    (RegionType.ROOM, ChannelType.BLUE, ModelType.DF_CUSTOM): 220,      # wall_reflectance (value)
-    (RegionType.ROOM, ChannelType.BLUE, ModelType.DA_CUSTOM): 220,      # wall_reflectance (value)
-
+    (
+        RegionType.ROOM,
+        ChannelType.ALPHA,
+        ModelType.DF_DEFAULT,
+    ): 220,  # ceiling_reflectance
+    (
+        RegionType.ROOM,
+        ChannelType.ALPHA,
+        ModelType.DA_DEFAULT,
+    ): 220,  # ceiling_reflectance
+    (
+        RegionType.ROOM,
+        ChannelType.ALPHA,
+        ModelType.DF_CUSTOM,
+    ): 220,  # ceiling_reflectance
+    (
+        RegionType.ROOM,
+        ChannelType.ALPHA,
+        ModelType.DA_CUSTOM,
+    ): 220,  # ceiling_reflectance
+    (
+        RegionType.ROOM,
+        ChannelType.GREEN,
+        ModelType.DF_DEFAULT,
+    ): 220,  # floor_reflectance (saturation)
+    (
+        RegionType.ROOM,
+        ChannelType.GREEN,
+        ModelType.DA_DEFAULT,
+    ): 220,  # floor_reflectance (saturation)
+    (
+        RegionType.ROOM,
+        ChannelType.GREEN,
+        ModelType.DF_CUSTOM,
+    ): 220,  # floor_reflectance (saturation)
+    (
+        RegionType.ROOM,
+        ChannelType.GREEN,
+        ModelType.DA_CUSTOM,
+    ): 220,  # floor_reflectance (saturation)
+    (
+        RegionType.ROOM,
+        ChannelType.BLUE,
+        ModelType.DF_DEFAULT,
+    ): 220,  # wall_reflectance (value)
+    (
+        RegionType.ROOM,
+        ChannelType.BLUE,
+        ModelType.DA_DEFAULT,
+    ): 220,  # wall_reflectance (value)
+    (
+        RegionType.ROOM,
+        ChannelType.BLUE,
+        ModelType.DF_CUSTOM,
+    ): 220,  # wall_reflectance (value)
+    (
+        RegionType.ROOM,
+        ChannelType.BLUE,
+        ModelType.DA_CUSTOM,
+    ): 220,  # wall_reflectance (value)
     # Window defaults (alpha=frameReflectance, hue=sillHeight, sat=frameRatio, val=windowHeight)
-    (RegionType.WINDOW, ChannelType.ALPHA, ModelType.DF_DEFAULT): 230,  # window_frame_reflectance
-    (RegionType.WINDOW, ChannelType.ALPHA, ModelType.DA_DEFAULT): 230,  # window_frame_reflectance
-    (RegionType.WINDOW, ChannelType.ALPHA, ModelType.DF_CUSTOM): 230,   # window_frame_reflectance
-    (RegionType.WINDOW, ChannelType.ALPHA, ModelType.DA_CUSTOM): 230,   # window_frame_reflectance
+    (
+        RegionType.WINDOW,
+        ChannelType.ALPHA,
+        ModelType.DF_DEFAULT,
+    ): 230,  # window_frame_reflectance
+    (
+        RegionType.WINDOW,
+        ChannelType.ALPHA,
+        ModelType.DA_DEFAULT,
+    ): 230,  # window_frame_reflectance
+    (
+        RegionType.WINDOW,
+        ChannelType.ALPHA,
+        ModelType.DF_CUSTOM,
+    ): 230,  # window_frame_reflectance
+    (
+        RegionType.WINDOW,
+        ChannelType.ALPHA,
+        ModelType.DA_CUSTOM,
+    ): 230,  # window_frame_reflectance
 }
 
 
@@ -446,7 +558,7 @@ class ContentType(Enum):
 
     @classmethod
     def is_image(cls, content_type: str) -> bool:
-        return content_type.startswith('image/')
+        return content_type.startswith("image/")
 
 
 class HTTPStatus(Enum):
@@ -457,12 +569,13 @@ class HTTPStatus(Enum):
 
 class ServiceName(Enum):
     """Service names for dependency injection"""
+
     DF_AGGREGATION = "df_aggregation"
 
 
 class Endpoint(Enum):
     """API endpoint names"""
+
     STATUS = "status"
     ROUTE_EXAMPLE = "route_example"
     MERGE = "merge"
-

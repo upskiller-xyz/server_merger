@@ -1,10 +1,11 @@
 """Tests for RangeValidator"""
 
-import pytest
 import numpy as np
+import pytest
+
+from src.server.services.validation.enums import ErrorCode
 from src.server.services.validation.range_validator import RangeValidator
 from src.server.services.validation.validation_error import ValidationError
-from src.server.services.validation.enums import ErrorCode
 
 
 class TestRangeValidator:
@@ -33,7 +34,7 @@ class TestRangeValidator:
         validator = RangeValidator(min_value=0, max_value=100)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(-1, "field")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.INVALID_RANGE
         assert ">=" in error.message
@@ -43,7 +44,7 @@ class TestRangeValidator:
         validator = RangeValidator(min_value=0, max_value=100)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(101, "field")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.INVALID_RANGE
         assert "<=" in error.message
@@ -94,7 +95,7 @@ class TestRangeValidator:
         validator = RangeValidator(min_value=0, max_value=100)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate("not a number", "field")
-        
+
         error = exc_info.value
         assert error.error_code == ErrorCode.INVALID_TYPE
 
@@ -133,7 +134,7 @@ class TestRangeValidator:
         validator = RangeValidator(min_value=0, max_value=100)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(150, "room.width")
-        
+
         error = exc_info.value
         assert error.field == "room.width"
 
@@ -142,7 +143,7 @@ class TestRangeValidator:
         validator = RangeValidator(min_value=0, max_value=100)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(150, "field")
-        
+
         error = exc_info.value
         assert error.value == 150
 
@@ -151,7 +152,7 @@ class TestRangeValidator:
         validator = RangeValidator(min_value=0, max_value=100)
         with pytest.raises(ValidationError) as exc_info:
             validator.validate(150, "field")
-        
+
         error = exc_info.value
         assert error.context["min"] == 0
         assert error.context["max"] == 100

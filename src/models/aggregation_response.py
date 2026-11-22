@@ -24,13 +24,10 @@ class AggregationResponse:
         Returns:
             Dictionary with 'result' and 'mask' keys
         """
-        return {
-            'result': self.result,
-            'mask': self.mask
-        }
+        return {"result": self.result, "mask": self.mask}
 
     @classmethod
-    def from_arrays(cls, df_matrix, room_mask) -> 'AggregationResponse':
+    def from_arrays(cls, df_matrix, room_mask) -> "AggregationResponse":
         """
         Create AggregationResponse from numpy arrays.
 
@@ -41,7 +38,4 @@ class AggregationResponse:
         Returns:
             AggregationResponse instance
         """
-        return cls(
-            result=df_matrix.tolist(),
-            mask=room_mask.tolist()
-        )
+        return cls(result=df_matrix.tolist(), mask=room_mask.tolist())

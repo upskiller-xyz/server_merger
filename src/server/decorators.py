@@ -18,8 +18,7 @@ INTERNAL_ERROR_TYPE = "InternalError"
 
 
 def endpoint_error_handler(
-    endpoint: Endpoint,
-    request_model: Optional[Type[BaseModel]] = None
+    endpoint: Endpoint, request_model: Optional[Type[BaseModel]] = None
 ) -> Callable:
     """
     Decorator for endpoint handlers to provide unified error handling and JSON extraction.
@@ -49,6 +48,7 @@ def endpoint_error_handler(
     Returns:
         Decorated function with JSON extraction, validation, and error handling
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -60,7 +60,9 @@ def endpoint_error_handler(
                         if raw_data is None:
                             raw_data = {}
                     except (BadRequest, UnsupportedMediaType):
-                        return jsonify({"error": "Invalid JSON in request body"}), HTTPStatus.BAD_REQUEST.value
+                        return jsonify(
+                            {"error": "Invalid JSON in request body"}
+                        ), HTTPStatus.BAD_REQUEST.value
                 else:
                     raw_data = {}
 
@@ -70,11 +72,15 @@ def endpoint_error_handler(
                         data = request_model(**raw_data)
                     except ValidationError as e:
                         # Format validation errors
-                        error_msgs = "; ".join([
-                            f"{error['loc'][0]}: {error['msg']}"
-                            for error in e.errors()
-                        ])
-                        return jsonify({"error": f"Validation error: {error_msgs}"}), HTTPStatus.BAD_REQUEST.value
+                        error_msgs = "; ".join(
+                            [
+                                f"{error['loc'][0]}: {error['msg']}"
+                                for error in e.errors()
+                            ]
+                        )
+                        return jsonify(
+                            {"error": f"Validation error: {error_msgs}"}
+                        ), HTTPStatus.BAD_REQUEST.value
                 else:
                     data = raw_data
 
@@ -86,12 +92,13 @@ def endpoint_error_handler(
                 return jsonify({"error": str(e)}), HTTPStatus.BAD_REQUEST.value
             except ValidationError as e:
                 # Log validation error
-                error_msgs = "; ".join([
-                    f"{error['loc'][0]}: {error['msg']}"
-                    for error in e.errors()
-                ])
+                error_msgs = "; ".join(
+                    [f"{error['loc'][0]}: {error['msg']}" for error in e.errors()]
+                )
                 logger.error(f"{endpoint.value} validation error: {error_msgs}")
-                return jsonify({"error": f"Validation error: {error_msgs}"}), HTTPStatus.BAD_REQUEST.value
+                return jsonify(
+                    {"error": f"Validation error: {error_msgs}"}
+                ), HTTPStatus.BAD_REQUEST.value
             except ClientInputError as e:
                 # Expected client-validation error: the message is built for
                 # the caller (window placement, polygon format) and safe to
@@ -106,10 +113,12 @@ def endpoint_error_handler(
                     f"{endpoint.value} internal ValueError: {str(e)}\n"
                     f"Traceback:\n{error_trace}"
                 )
-                return jsonify({
-                    "error": f"{endpoint.value} failed: internal error",
-                    "error_type": INTERNAL_ERROR_TYPE
-                }), HTTPStatus.INTERNAL_SERVER_ERROR.value
+                return jsonify(
+                    {
+                        "error": f"{endpoint.value} failed: internal error",
+                        "error_type": INTERNAL_ERROR_TYPE,
+                    }
+                ), HTTPStatus.INTERNAL_SERVER_ERROR.value
             except HTTPException:
                 # Other Werkzeug HTTP errors (e.g. 413 body too large) keep their status.
                 raise
@@ -122,10 +131,12 @@ def endpoint_error_handler(
                     f"Traceback:\n{error_trace}"
                 )
                 # Full detail stays in the log; the caller gets no internals.
-                return jsonify({
-                    "error": f"{endpoint.value} failed: internal error",
-                    "error_type": INTERNAL_ERROR_TYPE
-                }), HTTPStatus.INTERNAL_SERVER_ERROR.value
+                return jsonify(
+                    {
+                        "error": f"{endpoint.value} failed: internal error",
+                        "error_type": INTERNAL_ERROR_TYPE,
+                    }
+                ), HTTPStatus.INTERNAL_SERVER_ERROR.value
 
         return wrapper
 
